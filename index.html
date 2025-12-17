@@ -3,77 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord カスタムステータス設定ツール</title>
+    <title>Discord カスタムプロフィール設定ツール</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body { background:#202225; color:#dcddde; font-family:'Whitney',sans-serif; padding:20px; margin:0; }
-        .container { max-width:800px; margin:0 auto; }
+        .container { max-width:900px; margin:0 auto; }
         header { text-align:center; padding:20px; border-bottom:1px solid #36393f; }
         h1 { color:white; }
         .card { background:#2f3136; border-radius:8px; padding:20px; margin:20px 0; }
-        .input-group { display:flex; flex-direction:column; gap:10px; margin-bottom:15px; }
-        input, select { padding:12px; background:#202225; border:none; color:white; border-radius:4px; }
-        button { padding:12px 20px; background:#5865F2; color:white; border:none; cursor:pointer; border-radius:4px; margin-top:10px; }
+        .input-group { display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:15px; }
+        @media (max-width:700px) { .input-group { grid-template-columns:1fr; } }
+        label { display:block; margin-bottom:5px; }
+        input, textarea, select { width:100%; padding:12px; background:#202225; border:none; color:white; border-radius:4px; }
+        textarea { height:100px; resize:vertical; }
+        button { padding:12px 20px; background:#5865F2; color:white; border:none; cursor:pointer; border-radius:4px; margin-right:10px; margin-top:10px; }
         button:hover { background:#4752C4; }
         button.danger { background:#ed4245; }
         button.danger:hover { background:#c03537; }
-        .preview { background:#36393f; padding:15px; border-radius:8px; margin-top:20px; font-family:monospace; }
-        .status-line { display:flex; align-items:center; gap:15px; }
-        .status-icon { width:64px; height:64px; border-radius:12px; background:#43b581; }
-        .status-text { flex:1; }
-        .status-game { font-weight:bold; color:#fff; }
-        .status-detail { color:#b9bbbe; font-size:0.9em; }
-        .status-time { color:#72767d; font-size:0.8em; }
+        .preview { background:#36393f; padding:20px; border-radius:8px; margin-top:20px; text-align:center; }
+        .preview-banner { width:100%; height:180px; background:#43b581; border-radius:8px; background-size:cover; background-position:center; margin-bottom:20px; }
+        .preview-avatar { width:120px; height:120px; border-radius:50%; border:6px solid #2f3136; margin-top:-70px; background:#7289da; }
+        .preview-name { font-size:1.8em; font-weight:bold; margin:10px 0; }
+        .preview-bio { margin:15px 0; color:#b9bbbe; }
         .hidden { display:none; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><i class="fab fa-discord"></i> Discord カスタムステータス設定</h1>
-            <p>「〇〇プレイ中」みたいなRich Presenceを自由に設定（永続化版）</p>
+            <h1><i class="fab fa-discord"></i> Discord カスタムプロフィール設定</h1>
+            <p>バナー・自己紹介・カラー・ステータスを自由にカスタマイズ（永続化対応）</p>
         </header>
 
         <div id="token-card" class="card">
-            <h2>Discordトークンを入力</h2>
-            <input type="password" id="token-input" placeholder="トークン（保存されます）">
+            <h2>トークンを入力</h2>
+            <input type="password" id="token-input" placeholder="Discordユーザートークン">
             <button id="connect-btn">接続</button>
-            <p style="font-size:0.9em; margin-top:10px;">※ ログアウトで全データ削除可能</p>
         </div>
 
         <div id="main-card" class="card hidden">
-            <h2>カスタムステータス設定</h2>
+            <h2>プロフィール設定</h2>
             <div class="input-group">
-                <label>ゲーム名（上段・太字）</label>
-                <input type="text" id="game-name" placeholder="例: Genshin Impact プレイ中">
-                
-                <label>詳細テキスト（下段）</label>
-                <input type="text" id="details" placeholder="例: Teyvatを探索中">
-                
-                <label>経過時間表示</label>
-                <select id="timestamp-mode">
-                    <option value="none">表示しない</option>
-                    <option value="now">今から開始（経過時間）</option>
-                    <option value="fixed">固定時間（例: 3:14）</option>
-                </select>
-                
-                <label>アイコン画像URL（64x64推奨）</label>
-                <input type="text" id="icon-url" placeholder="https://example.com/icon.png">
+                <div>
+                    <label>バナー画像URL（横長推奨）</label>
+                    <input type="text" id="banner-url" placeholder="https://example.com/banner.jpg">
+                </div>
+                <div>
+                    <label>プロフィールカラー（16進数 #RRGGBB）</label>
+                    <input type="text" id="accent-color" placeholder="#5865F2">
+                </div>
             </div>
-            
-            <button id="set-status">ステータスを設定</button>
-            <button id="clear-status" class="danger">ステータスをクリア</button>
-            
+            <label>自己紹介（Bio）</label>
+            <textarea id="bio" placeholder="ここに自己紹介を書けます..."></textarea>
+
+            <h3 style="margin-top:30px;">カスタムステータス（プレイ中）</h3>
+            <div class="input-group">
+                <div>
+                    <label>ゲーム名</label>
+                    <input type="text" id="game-name" placeholder="例: 原神 プレイ中">
+                </div>
+                <div>
+                    <label>詳細テキスト</label>
+                    <input type="text" id="details" placeholder="例: テイワット探索中">
+                </div>
+            </div>
+            <div class="input-group">
+                <div>
+                    <label>経過時間</label>
+                    <select id="timestamp-mode">
+                        <option value="none">なし</option>
+                        <option value="now">今から開始</option>
+                    </select>
+                </div>
+                <div>
+                    <label>アイコンURL</label>
+                    <input type="text" id="icon-url" placeholder="https://example.com/icon.png">
+                </div>
+            </div>
+
+            <button id="apply-all">すべて適用</button>
+            <button id="clear-all" class="danger">プロフィール初期化</button>
+
             <div class="preview">
                 <h3>プレビュー</h3>
-                <div class="status-line" id="preview-box">
-                    <div class="status-icon" id="preview-icon"></div>
-                    <div class="status-text">
-                        <div class="status-game" id="preview-game">ゲーム名</div>
-                        <div class="status-detail" id="preview-detail">詳細テキスト</div>
-                        <div class="status-time" id="preview-time"></div>
-                    </div>
-                </div>
+                <div class="preview-banner" id="preview-banner"></div>
+                <img class="preview-avatar" id="preview-avatar" src="">
+                <div class="preview-name" id="preview-name">あなたの名前</div>
+                <div class="preview-bio" id="preview-bio">自己紹介がここに表示されます</div>
+                <div id="preview-status"></div>
             </div>
         </div>
 
@@ -81,9 +98,7 @@
             <div style="display:flex; align-items:center; justify-content:space-between;">
                 <div style="display:flex; align-items:center; gap:15px;">
                     <img id="avatar" src="" width="64" height="64" style="border-radius:50%;">
-                    <div>
-                        <h3 id="username">読み込み中...</h3>
-                    </div>
+                    <h3 id="username">読み込み中...</h3>
                 </div>
                 <button id="logout-btn" class="danger">全データ削除＆ログアウト</button>
             </div>
@@ -93,63 +108,84 @@
     <script>
         const API = 'https://discord.com/api/v9';
         let token = null;
+        let userData = null;
         let startTime = null;
 
-        // プレビュー更新
         function updatePreview() {
-            document.getElementById('preview-game').textContent = document.getElementById('game-name').value || 'ゲーム名';
-            document.getElementById('preview-detail').textContent = document.getElementById('details').value || '詳細テキスト';
-            
-            const iconUrl = document.getElementById('icon-url').value;
-            if (iconUrl) {
-                document.getElementById('preview-icon').style.backgroundImage = `url(${iconUrl})`;
-                document.getElementById('preview-icon').style.backgroundSize = 'cover';
+            const banner = document.getElementById('banner-url').value;
+            if (banner) {
+                document.getElementById('preview-banner').style.backgroundImage = `url(${banner})`;
             } else {
-                document.getElementById('preview-icon').style.backgroundImage = '';
-                document.getElementById('preview-icon').style.backgroundColor = '#43b581';
+                document.getElementById('preview-banner').style.backgroundImage = '';
+                document.getElementById('preview-banner').style.backgroundColor = '#43b581';
             }
 
-            const mode = document.getElementById('timestamp-mode').value;
-            if (mode === 'now' && startTime) {
-                const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
-                const s = String(elapsed % 60).padStart(2, '0');
-                document.getElementById('preview-time').textContent = `${m}:${s} 経過`;
-            } else if (mode === 'fixed') {
-                document.getElementById('preview-time').textContent = '3:14 経過'; // 例
-            } else {
-                document.getElementById('preview-time').textContent = '';
+            document.getElementById('preview-bio').textContent = document.getElementById('bio').value || '自己紹介がここに表示されます';
+
+            const game = document.getElementById('game-name').value;
+            const details = document.getElementById('details').value;
+            let statusHTML = '';
+            if (game || details) {
+                statusHTML = `<div style="margin-top:15px; text-align:left;">
+                    <strong>${game || 'ゲーム名'}</strong><br>
+                    <span style="color:#b9bbbe;">${details || '詳細テキスト'}</span>`;
+                if (document.getElementById('timestamp-mode').value === 'now' && startTime) {
+                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                    const s = String(elapsed % 60).padStart(2, '0');
+                    statusHTML += `<br><span style="color:#72767d;">${m}:${s} 経過</span>`;
+                }
+                statusHTML += '</div>';
             }
+            document.getElementById('preview-status').innerHTML = statusHTML;
         }
 
-        // ステータス設定（非公式RPC風）
-        async function setCustomStatus() {
-            const name = document.getElementById('game-name').value.trim();
-            const details = document.getElementById('details').value.trim();
-            const iconUrl = document.getElementById('icon-url').value.trim();
-
-            if (!name && !details) {
-                alert('ゲーム名または詳細を入力してください');
-                return;
-            }
+        async function applyProfile() {
+            const banner = document.getElementById('banner-url').value.trim();
+            const color = document.getElementById('accent-color').value.trim();
+            const bio = document.getElementById('bio').value.trim();
 
             const payload = {
-                activities: [{
-                    name: name || "Discord",
-                    type: 0, // PLAYING
-                    details: details || undefined,
-                    assets: iconUrl ? { large_image: iconUrl } : undefined,
-                    timestamps: {}
-                }]
+                bio: bio || null,
+                accent_color: color ? parseInt(color.replace('#', ''), 16) : null
             };
 
-            const mode = document.getElementById('timestamp-mode').value;
-            if (mode === 'now') {
-                startTime = Date.now();
-                payload.activities[0].timestamps.start = startTime;
-            } else if (mode === 'fixed') {
-                // 固定時間は簡易的に現在-3分14秒
-                payload.activities[0].timestamps.start = Date.now() - 194000;
+            if (banner) {
+                payload.banner = banner;
+            }
+
+            try {
+                await fetch(`${API}/users/@me/profile`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+            } catch (e) {
+                alert('プロフィール設定失敗: ' + e.message);
+            }
+
+            // カスタムステータス
+            const game = document.getElementById('game-name').value.trim();
+            const details = document.getElementById('details').value.trim();
+            const icon = document.getElementById('icon-url').value.trim();
+
+            const activities = [];
+            if (game || details) {
+                const act = {
+                    name: game || "Discord",
+                    type: 0,
+                    details: details || undefined,
+                    assets: icon ? { large_image: icon } : undefined,
+                    timestamps: {}
+                };
+                if (document.getElementById('timestamp-mode').value === 'now') {
+                    startTime = Date.now();
+                    act.timestamps.start = startTime;
+                }
+                activities.push(act);
             }
 
             try {
@@ -159,17 +195,26 @@
                         'Authorization': token,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ custom_status: null, activities: payload.activities })
+                    body: JSON.stringify({ activities })
                 });
-                alert('ステータスを設定しました！（Discordアプリを再起動すると反映されます）');
+                alert('カスタムプロフィール適用完了！（アプリ再起動で反映）');
                 updatePreview();
             } catch (e) {
-                alert('設定に失敗: ' + e.message);
+                alert('ステータス設定失敗: ' + e.message);
             }
         }
 
-        async function clearStatus() {
+        async function clearProfile() {
+            if (!confirm('プロフィールを初期状態に戻しますか？')) return;
             try {
+                await fetch(`${API}/users/@me/profile`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ banner: null, accent_color: null, bio: null })
+                });
                 await fetch(`${API}/users/@me/settings`, {
                     method: 'PATCH',
                     headers: {
@@ -178,11 +223,10 @@
                     },
                     body: JSON.stringify({ activities: [] })
                 });
-                alert('ステータスをクリアしました');
-                startTime = null;
-                updatePreview();
+                alert('プロフィール初期化完了');
+                location.reload();
             } catch (e) {
-                alert('クリア失敗: ' + e.message);
+                alert('初期化失敗: ' + e.message);
             }
         }
 
@@ -194,31 +238,35 @@
             try {
                 const res = await fetch(`${API}/users/@me`, { headers: { 'Authorization': token } });
                 if (!res.ok) throw new Error('無効なトークン');
-                const user = await res.json();
+                userData = await res.json();
 
-                document.getElementById('username').textContent = user.global_name || user.username;
-                document.getElementById('avatar').src = user.avatar 
-                    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`
+                document.getElementById('username').textContent = userData.global_name || userData.username;
+                document.getElementById('avatar').src = userData.avatar 
+                    ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png?size=128`
                     : 'https://cdn.discordapp.com/embed/avatars/0.png';
+                document.getElementById('preview-avatar').src = document.getElementById('avatar').src;
+                document.getElementById('preview-name').textContent = userData.global_name || userData.username;
 
                 document.getElementById('token-card').classList.add('hidden');
                 document.getElementById('main-card').classList.remove('hidden');
                 document.getElementById('user-card').classList.remove('hidden');
+
+                updatePreview();
             } catch (e) {
                 alert('接続失敗: ' + e.message);
             }
         };
 
-        document.getElementById('set-status').onclick = setCustomStatus;
-        document.getElementById('clear-status').onclick = clearStatus;
+        document.getElementById('apply-all').onclick = applyProfile;
+        document.getElementById('clear-all').onclick = clearProfile;
 
         // リアルタイムプレビュー
-        ['game-name','details','icon-url','timestamp-mode'].forEach(id => {
-            document.getElementById(id).addEventListener('input', updatePreview);
+        document.querySelectorAll('input, textarea, select').forEach(el => {
+            el.addEventListener('input', updatePreview);
         });
 
         document.getElementById('logout-btn').onclick = () => {
-            if (confirm('全データ削除してログアウト？')) {
+            if (confirm('全データ削除しますか？')) {
                 localStorage.clear();
                 location.reload();
             }
