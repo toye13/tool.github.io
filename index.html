@@ -3,52 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord アカウント存在確認ツール（保存なし）</title>
+    <title>Discord 削除済みサーバー・ユーザー検出ツール</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        :root {
-            --discord-primary: #5865F2;
-            --discord-secondary: #4752C4;
-            --discord-darkest: #202225;
-            --discord-dark: #2f3136;
-            --discord-darker: #36393f;
-            --discord-light: #dcddde;
-            --discord-danger: #ed4245;
-            --discord-success: #3ba55d;
-        }
-
         body {
-            background-color: #202225;
+            background: #202225;
             color: #dcddde;
             font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             padding: 20px;
             margin: 0;
         }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        header {
-            text-align: center;
-            padding: 20px;
-            border-bottom: 1px solid #36393f;
-        }
-
-        h1 { color: white; }
+        .container { max-width: 900px; margin: 0 auto; }
+        header { text-align: center; padding: 20px; border-bottom: 1px solid #36393f; }
+        h1, h2, h3 { color: white; }
         .card {
             background: #2f3136;
             border-radius: 8px;
             padding: 20px;
             margin: 20px 0;
         }
-
-        .input-group {
-            display: flex;
-            margin-bottom: 15px;
-        }
-
+        .input-group { display: flex; margin-bottom: 15px; }
         input {
             flex: 1;
             padding: 12px;
@@ -57,39 +31,37 @@
             color: white;
             border-radius: 4px 0 0 4px;
         }
-
         button {
             padding: 12px 20px;
-            background: var(--discord-primary);
+            background: #5865F2;
             color: white;
             border: none;
             cursor: pointer;
             border-radius: 0 4px 4px 0;
         }
-
-        button:hover { background: var(--discord-secondary); }
-        button.danger { background: var(--discord-danger); }
+        button:hover { background: #4752C4; }
+        button.danger { background: #ed4245; }
         button.danger:hover { background: #c03537; }
-
-        #results-list li {
-            padding: 10px;
-            margin: 8px 0;
-            border-radius: 4px;
+        .log {
+            background: #1e1f22;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 500px;
+            overflow-y: auto;
+            margin-top: 10px;
         }
-
-        .success { background: rgba(59,165,93,0.2); border-left: 4px solid var(--discord-success); }
-        .error { background: rgba(237,66,69,0.2); border-left: 4px solid var(--discord-danger); }
-
         .hidden { display: none; }
-
         .disclaimer { font-size: 0.9em; color: #72767d; margin-top: 15px; }
+        .loading { color: #7289da; font-style: italic; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><i class="fab fa-discord"></i> Discord アカウント存在確認ツール</h1>
-            <p>保存なし・痕跡残らず版（タブ閉じたらすべて消えます）</p>
+            <h1><i class="fab fa-discord"></i> Discord 削除済みサーバー・ユーザー検出ツール</h1>
+            <p>トークン入力後、参加していたが今は存在しないサーバーとユーザーをログ表示（保存なし）</p>
         </header>
 
         <div id="token-card" class="card">
@@ -97,11 +69,11 @@
             <p>あなたのDiscordユーザートークンを入力してください（どこにも保存されません）</p>
             <div class="input-group">
                 <input type="password" id="token-input" placeholder="トークンをここに貼り付け">
-                <button id="connect-btn">接続</button>
+                <button id="connect-btn">接続・検出開始</button>
             </div>
             <div class="disclaimer">
-                ⚠️ このページはブラウザ内でしか動きません。トークンは外部に一切送信されません。<br>
-                ⚠️ 使い終わったらタブを閉じてください。リロードしても入力内容は消えます。<br>
+                ⚠️ ブラウザ内のみで動作。トークンは外部送信されません。<br>
+                ⚠️ 検出結果はページリロードで消えます。使い終わったらタブを閉じてください。<br>
                 ⚠️ 自己責任でお使いください。
             </div>
         </div>
@@ -119,96 +91,103 @@
             </div>
         </div>
 
-        <div id="check-card" class="card hidden">
-            <h2>ユーザーIDでアカウント存在確認</h2>
-            <p>確認したいDiscordユーザーIDを入力（数字17～19桁）</p>
-            <div class="input-group">
-                <input type="text" id="userid-input" placeholder="例: 123456789012345678">
-                <button id="check-btn">確認</button>
-            </div>
-        </div>
-
-        <div id="results-card" class="card hidden">
-            <h2>結果（リロードで消えます）</h2>
-            <ul id="results-list"></ul>
+        <div id="log-card" class="card hidden">
+            <h2>検出ログ（存在しないサーバー・ユーザー）</h2>
+            <div id="loading-text" class="loading">サーバーと関係を取得中...</div>
+            <pre class="log" id="log-output"></pre>
         </div>
     </div>
 
     <script>
         const API = 'https://discord.com/api/v9';
         let token = null;
+        let logText = '';
+
+        function addLog(line) {
+            logText += line + '\n';
+            document.getElementById('log-output').textContent = logText;
+        }
 
         document.getElementById('connect-btn').onclick = async () => {
             token = document.getElementById('token-input').value.trim();
             if (!token) return alert('トークンを入力してください');
 
+            // ユーザー情報取得
             try {
-                const res = await fetch(`${API}/users/@me`, {
-                    headers: { 'Authorization': token }
-                });
+                const meRes = await fetch(`${API}/users/@me`, { headers: { 'Authorization': token } });
+                if (!meRes.ok) throw new Error('無効なトークン');
+                const me = await meRes.json();
 
-                if (!res.ok) throw new Error('トークンが無効です');
-
-                const user = await res.json();
-                document.getElementById('username').textContent = user.username;
-                document.getElementById('tag').textContent = `#${user.discriminator}`;
-                document.getElementById('avatar').src = user.avatar 
-                    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`
+                document.getElementById('username').textContent = me.username;
+                document.getElementById('tag').textContent = me.discriminator === '0' ? '' : `#${me.discriminator}`;
+                document.getElementById('avatar').src = me.avatar 
+                    ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=128`
                     : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
                 document.getElementById('token-card').classList.add('hidden');
                 document.getElementById('user-card').classList.remove('hidden');
-                document.getElementById('check-card').classList.remove('hidden');
+                document.getElementById('log-card').classList.remove('hidden');
+
+                addLog(`[${new Date().toLocaleTimeString()}] 接続成功: ${me.username}${me.discriminator !== '0' ? '#' + me.discriminator : ''} (ID: ${me.id})`);
+                addLog(`[${new Date().toLocaleTimeString()}] 検出を開始します...`);
             } catch (e) {
-                alert('トークンが正しくありません: ' + e.message);
+                alert('トークンが無効です: ' + e.message);
+                return;
             }
+
+            // サーバー（ギルド）取得とチェック
+            try {
+                addLog(`\n--- サーバー（ギルド）チェック開始 ---`);
+                const guildsRes = await fetch(`${API}/users/@me/guilds`, { headers: { 'Authorization': token } });
+                const guilds = await guildsRes.json();
+
+                let deletedCount = 0;
+                for (const guild of guilds) {
+                    const res = await fetch(`${API}/guilds/${guild.id}`, { headers: { 'Authorization': token } });
+                    if (res.status === 404 || res.status === 403) {
+                        addLog(`[削除済みサーバー] ${guild.name} (ID: ${guild.id})`);
+                        deletedCount++;
+                    }
+                }
+                addLog(`サーバーチェック完了。削除済みサーバー: ${deletedCount}件`);
+            } catch (e) {
+                addLog(`サーバー取得エラー: ${e.message}`);
+            }
+
+            // 関係（フレンド・ブロックなど）取得とチェック
+            try {
+                addLog(`\n--- ユーザー関係チェック開始 ---`);
+                const relationsRes = await fetch(`${API}/users/@me/relationships`, { headers: { 'Authorization': token } });
+                const relations = await relationsRes.json();
+
+                let deletedUserCount = 0;
+                for (const rel of relations) {
+                    const res = await fetch(`${API}/users/${rel.id}`, { headers: { 'Authorization': token } });
+                    if (res.status === 404) {
+                        const type = {1: 'フレンド', 2: 'ブロック', 3: '送信中', 4: '受信中'}[rel.type] || '不明';
+                        addLog(`[削除済みユーザー] ${rel.user.username}#${rel.user.discriminator} (ID: ${rel.id}) - 関係: ${type}`);
+                        deletedUserCount++;
+                    }
+                }
+                addLog(`ユーザー関係チェック完了。削除済みユーザー: ${deletedUserCount}件`);
+            } catch (e) {
+                addLog(`ユーザー関係取得エラー: ${e.message}`);
+            }
+
+            addLog(`\n[${new Date().toLocaleTimeString()}] すべての検出が完了しました。`);
+            document.getElementById('loading-text').classList.add('hidden');
         };
 
         document.getElementById('logout-btn').onclick = () => {
             token = null;
+            logText = '';
             document.getElementById('token-input').value = '';
+            document.getElementById('log-output').textContent = '';
+            document.getElementById('loading-text').classList.remove('hidden');
             document.getElementById('token-card').classList.remove('hidden');
             document.getElementById('user-card').classList.add('hidden');
-            document.getElementById('check-card').classList.add('hidden');
-            document.getElementById('results-card').classList.add('hidden');
-            document.getElementById('results-list').innerHTML = '';
+            document.getElementById('log-card').classList.add('hidden');
         };
-
-        document.getElementById('check-btn').onclick = async () => {
-            const uid = document.getElementById('userid-input').value.trim();
-            if (!/^\d{17,20}$/.test(uid)) return alert('正しいユーザーIDを入力してください（17～19桁の数字）');
-
-            const li = document.createElement('li');
-            document.getElementById('results-card').classList.remove('hidden');
-
-            try {
-                const res = await fetch(`${API}/users/${uid}`, {
-                    headers: { 'Authorization': token }
-                });
-
-                if (res.ok) {
-                    const u = await res.json();
-                    li.className = 'success';
-                    li.innerHTML = `<i class="fas fa-check"></i> 存在します → ${u.username}#${u.discriminator} (ID: ${uid})`;
-                } else if (res.status === 404) {
-                    li.className = 'error';
-                    li.innerHTML = `<i class="fas fa-times"></i> 存在しません（削除済みまたは無効） → ID: ${uid}`;
-                } else {
-                    throw new Error(res.status);
-                }
-            } catch (e) {
-                li.className = 'error';
-                li.innerHTML = `<i class="fas fa-times"></i> エラー: ${e.message || '不明なエラー'}`;
-            }
-
-            document.getElementById('results-list').prepend(li); // 新しい結果を上に表示
-            document.getElementById('userid-input').value = '';
-        };
-
-        // Enterキーでもチェック可能
-        document.getElementById('userid-input').addEventListener('keypress', e => {
-            if (e.key === 'Enter') document.getElementById('check-btn').click();
-        });
     </script>
 </body>
 </html>
