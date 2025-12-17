@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord アカウント存在確認ツール（メール表示対応）</title>
+    <title>Discord ユーザー検索ツール（名前・ID両対応）</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         :root {
@@ -60,30 +60,31 @@
         }
         .success { background: rgba(59,165,93,0.2); border-left: 4px solid var(--discord-success); }
         .error { background: rgba(237,66,69,0.2); border-left: 4px solid var(--discord-danger); }
+        .info { background: rgba(88,101,242,0.2); border-left: 4px solid var(--discord-primary); }
         .hidden { display: none; }
         .disclaimer { font-size: 0.9em; color: #72767d; margin-top: 15px; }
         .email-info { font-size: 0.9em; color: #b9bbbe; margin-top: 5px; }
+        .loading { color: #7289da; font-style: italic; padding: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><i class="fab fa-discord"></i> Discord アカウント存在確認ツール</h1>
-            <p>メールアドレス表示対応・保存なし版（タブ閉じたらすべて消えます）</p>
+            <h1><i class="fab fa-discord"></i> Discord ユーザー検索ツール</h1>
+            <p>ユーザー名またはIDで検索可能・メール表示対応・保存なし</p>
         </header>
 
         <div id="token-card" class="card">
             <h2>Discordトークンを入力</h2>
-            <p>あなたのDiscordユーザートークンを入力してください（どこにも保存されません）</p>
+            <p>あなたのDiscordユーザートークンを入力してください</p>
             <div class="input-group">
                 <input type="password" id="token-input" placeholder="トークンをここに貼り付け">
-                <button id="connect-btn">接続</button>
+                <button id="connect-btn">接続・フレンド読み込み</button>
             </div>
             <div class="disclaimer">
-                ⚠️ ブラウザ内のみ動作・外部送信なし<br>
-                ⚠️ メールアドレスは自分のアカウントや認証済み関係の場合のみ表示される可能性があります<br>
-                ⚠️ 他人のメールは取得できません（Discordが保護しています）<br>
-                ⚠️ 自己責任でお使いください
+                ⚠️ ブラウザ内のみ動作・外部送信なし・リロードで消えます<br>
+                ⚠️ ユーザー名検索はあなたのフレンドリスト内のみ対応（規約遵守）<br>
+                ⚠️ メールは自分または関係ユーザーでのみ表示される可能性あり
             </div>
         </div>
 
@@ -101,16 +102,17 @@
         </div>
 
         <div id="check-card" class="card hidden">
-            <h2>ユーザーIDでアカウント存在確認</h2>
-            <p>確認したいDiscordユーザーIDを入力（数字17～19桁）</p>
+            <h2>ユーザー検索</h2>
+            <p>ユーザー名（部分一致）またはIDを入力して検索（フレンド内）</p>
             <div class="input-group">
-                <input type="text" id="userid-input" placeholder="例: 123456789012345678">
-                <button id="check-btn">確認</button>
+                <input type="text" id="search-input" placeholder="例: nanachi または nanachi#1234 または 123456789012345678">
+                <button id="search-btn">検索</button>
             </div>
+            <div id="loading" class="loading hidden">フレンドを読み込み中...</div>
         </div>
 
         <div id="results-card" class="card hidden">
-            <h2>結果（リロードで消えます）</h2>
+            <h2>検索結果</h2>
             <ul id="results-list"></ul>
         </div>
     </div>
@@ -118,85 +120,129 @@
     <script>
         const API = 'https://discord.com/api/v9';
         let token = null;
+        let friends = []; // フレンドリストを保持（自分も含む）
 
         document.getElementById('connect-btn').onclick = async () => {
             token = document.getElementById('token-input').value.trim();
             if (!token) return alert('トークンを入力してください');
 
             try {
-                const res = await fetch(`${API}/users/@me`, {
-                    headers: { 'Authorization': token }
-                });
-                if (!res.ok) throw new Error('トークンが無効です');
+                // 自分の情報取得
+                const meRes = await fetch(`${API}/users/@me`, { headers: { 'Authorization': token } });
+                if (!meRes.ok) throw new Error('トークンが無効です');
+                const me = await meRes.json();
 
-                const user = await res.json();
-                document.getElementById('username').textContent = user.username;
-                document.getElementById('tag').textContent = user.discriminator === '0' ? '' : `#${user.discriminator}`;
-                document.getElementById('avatar').src = user.avatar
-                    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`
+                document.getElementById('username').textContent = me.username;
+                document.getElementById('tag').textContent = me.discriminator === '0' ? '' : `#${me.discriminator}`;
+                document.getElementById('avatar').src = me.avatar
+                    ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=128`
                     : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
+                // フレンドリスト取得
+                document.getElementById('loading').classList.remove('hidden');
+                const relRes = await fetch(`${API}/users/@me/relationships`, { headers: { 'Authorization': token } });
+                const relations = await relRes.json();
+
+                friends = [me]; // 自分を追加
+                for (const rel of relations) {
+                    if (rel.type === 1) { // フレンドのみ
+                        try {
+                            const userRes = await fetch(`${API}/users/${rel.id}`, { headers: { 'Authorization': token } });
+                            if (userRes.ok) {
+                                const user = await userRes.json();
+                                friends.push(user);
+                            }
+                        } catch (e) {}
+                    }
+                }
+
+                document.getElementById('loading').classList.add('hidden');
+
+                // UI表示
                 document.getElementById('token-card').classList.add('hidden');
                 document.getElementById('user-card').classList.remove('hidden');
                 document.getElementById('check-card').classList.remove('hidden');
+                document.getElementById('results-card').classList.remove('hidden');
+
+                addResult('info', `接続成功！フレンド ${friends.length - 1} 人を読み込みました（自分を含む合計 ${friends.length} 人）`);
             } catch (e) {
-                alert('トークンが正しくありません: ' + e.message);
+                alert('エラー: ' + e.message);
             }
         };
 
+        function addResult(type, html) {
+            const li = document.createElement('li');
+            li.className = type;
+            li.innerHTML = html;
+            document.getElementById('results-list').prepend(li);
+        }
+
+        document.getElementById('search-btn').onclick = () => {
+            const query = document.getElementById('search-input').value.trim().toLowerCase();
+            if (!query) return alert('検索クエリを入力してください');
+
+            document.getElementById('results-list').innerHTML = ''; // クリア
+
+            let found = false;
+
+            // ID検索（数字のみ）
+            if (/^\d{17,20}$/.test(query)) {
+                const user = friends.find(u => u.id === query);
+                if (user) {
+                    displayUserDetails(user);
+                    found = true;
+                } else {
+                    addResult('error', `<i class="fas fa-times"></i> ID ${query} はフレンドリストに見つかりませんでした`);
+                }
+            } else {
+                // ユーザー名検索（#タグ対応）
+                const results = friends.filter(u => {
+                    const full = `${u.username.toLowerCase()}#${u.discriminator || '0'}`;
+                    return u.username.toLowerCase().includes(query) || full.includes(query);
+                });
+
+                if (results.length > 0) {
+                    addResult('info', `<i class="fas fa-search"></i> 「${query}」で ${results.length} 件ヒット`);
+                    results.forEach(user => displayUserDetails(user));
+                    found = true;
+                }
+            }
+
+            if (!found) {
+                addResult('error', `<i class="fas fa-times"></i> 「${query}」に一致するユーザーはフレンド内にいませんでした`);
+            }
+
+            document.getElementById('search-input').value = '';
+        };
+
+        function displayUserDetails(u) {
+            let text = `<i class="fas fa-user"></i> <strong>${u.username}#${u.discriminator || '0'}</strong> (ID: ${u.id})`;
+
+            if (u.email) {
+                text += `<div class="email-info">メール: ${u.email} ${u.verified ? '(認証済み)' : '(未認証)'}</div>`;
+            } else if (u.id === friends[0].id) {
+                text += `<div class="email-info">メール: 自分のため表示可能（API制限により非表示の場合あり）</div>`;
+            } else {
+                text += `<div class="email-info">メール: 非公開または取得不可</div>`;
+            }
+
+            addResult('success', text);
+        }
+
         document.getElementById('logout-btn').onclick = () => {
             token = null;
+            friends = [];
             document.getElementById('token-input').value = '';
+            document.getElementById('results-list').innerHTML = '';
             document.getElementById('token-card').classList.remove('hidden');
             document.getElementById('user-card').classList.add('hidden');
             document.getElementById('check-card').classList.add('hidden');
             document.getElementById('results-card').classList.add('hidden');
-            document.getElementById('results-list').innerHTML = '';
         };
 
-        document.getElementById('check-btn').onclick = async () => {
-            const uid = document.getElementById('userid-input').value.trim();
-            if (!/^\d{17,20}$/.test(uid)) return alert('正しいユーザーIDを入力してください（17～19桁の数字）');
-
-            const li = document.createElement('li');
-            document.getElementById('results-card').classList.remove('hidden');
-
-            try {
-                const res = await fetch(`${API}/users/${uid}`, {
-                    headers: { 'Authorization': token }
-                });
-
-                if (res.ok) {
-                    const u = await res.json();
-                    li.className = 'success';
-                    let text = `<i class="fas fa-check"></i> 存在します → ${u.username}#${u.discriminator || '0'} (ID: ${uid})`;
-
-                    // メールアドレスがレスポンスに含まれていた場合のみ表示
-                    if (u.email) {
-                        text += `<div class="email-info">メールアドレス: ${u.email} ${u.verified ? '(認証済み)' : '(未認証)'}</div>`;
-                    } else {
-                        text += `<div class="email-info">メールアドレス: 表示不可（他人または非公開）</div>`;
-                    }
-
-                    li.innerHTML = text;
-                } else if (res.status === 404) {
-                    li.className = 'error';
-                    li.innerHTML = `<i class="fas fa-times"></i> 存在しません（削除済みまたは無効） → ID: ${uid}`;
-                } else {
-                    throw new Error(res.status);
-                }
-            } catch (e) {
-                li.className = 'error';
-                li.innerHTML = `<i class="fas fa-times"></i> エラー: ${e.message || '不明なエラー'}`;
-            }
-
-            document.getElementById('results-list').prepend(li);
-            document.getElementById('userid-input').value = '';
-        };
-
-        // Enterキーでもチェック可能
-        document.getElementById('userid-input').addEventListener('keypress', e => {
-            if (e.key === 'Enter') document.getElementById('check-btn').click();
+        // Enterで検索
+        document.getElementById('search-input').addEventListener('keypress', e => {
+            if (e.key === 'Enter') document.getElementById('search-btn').click();
         });
     </script>
 </body>
