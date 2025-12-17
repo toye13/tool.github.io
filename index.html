@@ -3,89 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord ユーザー検索ツール（名前・ID両対応）</title>
+    <title>Discord ユーザー検索ツール（データ永続化版）</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        :root {
-            --discord-primary: #5865F2;
-            --discord-secondary: #4752C4;
-            --discord-darkest: #202225;
-            --discord-dark: #2f3136;
-            --discord-darker: #36393f;
-            --discord-light: #dcddde;
-            --discord-danger: #ed4245;
-            --discord-success: #3ba55d;
-        }
-        body {
-            background-color: #202225;
-            color: #dcddde;
-            font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            padding: 20px;
-            margin: 0;
-        }
-        .container { max-width: 800px; margin: 0 auto; }
-        header { text-align: center; padding: 20px; border-bottom: 1px solid #36393f; }
-        h1 { color: white; }
-        .card {
-            background: #2f3136;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .input-group { display: flex; margin-bottom: 15px; }
-        input {
-            flex: 1;
-            padding: 12px;
-            background: #202225;
-            border: none;
-            color: white;
-            border-radius: 4px 0 0 4px;
-        }
-        button {
-            padding: 12px 20px;
-            background: var(--discord-primary);
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 0 4px 4px 0;
-        }
-        button:hover { background: var(--discord-secondary); }
-        button.danger { background: var(--discord-danger); }
-        button.danger:hover { background: #c03537; }
-        #results-list li {
-            padding: 12px;
-            margin: 8px 0;
-            border-radius: 4px;
-            word-break: break-all;
-        }
-        .success { background: rgba(59,165,93,0.2); border-left: 4px solid var(--discord-success); }
-        .error { background: rgba(237,66,69,0.2); border-left: 4px solid var(--discord-danger); }
-        .info { background: rgba(88,101,242,0.2); border-left: 4px solid var(--discord-primary); }
-        .hidden { display: none; }
-        .disclaimer { font-size: 0.9em; color: #72767d; margin-top: 15px; }
-        .email-info { font-size: 0.9em; color: #b9bbbe; margin-top: 5px; }
-        .loading { color: #7289da; font-style: italic; padding: 10px; }
+        body { background:#202225; color:#dcddde; font-family:'Whitney',sans-serif; padding:20px; margin:0; }
+        .container { max-width:800px; margin:0 auto; }
+        header { text-align:center; padding:20px; border-bottom:1px solid #36393f; }
+        h1, h2 { color:white; }
+        .card { background:#2f3136; border-radius:8px; padding:20px; margin:20px 0; }
+        .input-group { display:flex; margin-bottom:15px; }
+        input { flex:1; padding:12px; background:#202225; border:none; color:white; border-radius:4px 0 0 4px; }
+        button { padding:12px 20px; background:#5865F2; color:white; border:none; cursor:pointer; border-radius:0 4px 4px 0; }
+        button:hover { background:#4752C4; }
+        button.danger { background:#ed4245; }
+        button.danger:hover { background:#c03537; }
+        #results-list li { padding:12px; margin:8px 0; border-radius:4px; word-break:break-all; }
+        .success { background:rgba(59,165,93,0.2); border-left:4px solid #3ba55d; }
+        .error { background:rgba(237,66,69,0.2); border-left:4px solid #ed4245; }
+        .info { background:rgba(88,101,242,0.2); border-left:4px solid #5865F2; }
+        .hidden { display:none; }
+        .display-name { font-size:1.4em; font-weight:bold; color:#fff; margin:5px 0; }
+        .username { color:#b9bbbe; }
+        .user-id { font-size:0.9em; color:#72767d; }
+        .email-info { margin-top:8px; color:#8b8fff; font-size:0.9em; }
+        .search-history { margin-top:10px; font-size:0.9em; color:#72767d; }
+        .search-history-item { cursor:pointer; color:#5865F2; }
+        .search-history-item:hover { text-decoration:underline; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><i class="fab fa-discord"></i> Discord ユーザー検索ツール</h1>
-            <p>ユーザー名またはIDで検索可能・メール表示対応・保存なし</p>
+            <h1>Discord ユーザー検索ツール</h1>
+            <p>データ永続化版（トークン・フレンド・履歴が残ります）</p>
         </header>
 
         <div id="token-card" class="card">
-            <h2>Discordトークンを入力</h2>
-            <p>あなたのDiscordユーザートークンを入力してください</p>
+            <h2>トークンを入力</h2>
             <div class="input-group">
-                <input type="password" id="token-input" placeholder="トークンをここに貼り付け">
-                <button id="connect-btn">接続・フレンド読み込み</button>
+                <input type="password" id="token-input" placeholder="Discordトークン（保存されます）">
+                <button id="connect-btn">接続</button>
             </div>
-            <div class="disclaimer">
-                ⚠️ ブラウザ内のみ動作・外部送信なし・リロードで消えます<br>
-                ⚠️ ユーザー名検索はあなたのフレンドリスト内のみ対応（規約遵守）<br>
-                ⚠️ メールは自分または関係ユーザーでのみ表示される可能性あり
-            </div>
+            <p style="font-size:0.9em;">※ 保存されたトークンはこのブラウザ内のみ。ログアウトで削除可能</p>
         </div>
 
         <div id="user-card" class="card hidden">
@@ -93,22 +52,22 @@
                 <div style="display:flex; align-items:center; gap:15px;">
                     <img id="avatar" src="" width="64" height="64" style="border-radius:50%;">
                     <div>
-                        <h3 id="username">読み込み中...</h3>
-                        <p id="tag"></p>
+                        <div class="display-name" id="display-name">読み込み中...</div>
+                        <div class="username" id="username-tag"></div>
                     </div>
                 </div>
-                <button id="logout-btn" class="danger">ログアウト</button>
+                <button id="logout-btn" class="danger">全データ削除＆ログアウト</button>
             </div>
         </div>
 
         <div id="check-card" class="card hidden">
             <h2>ユーザー検索</h2>
-            <p>ユーザー名（部分一致）またはIDを入力して検索（フレンド内）</p>
+            <p>表示名・ユーザー名・ID で検索（フレンド内）</p>
             <div class="input-group">
-                <input type="text" id="search-input" placeholder="例: nanachi または nanachi#1234 または 123456789012345678">
+                <input type="text" id="search-input" placeholder="例: ななち, nanachi#0000, ID">
                 <button id="search-btn">検索</button>
             </div>
-            <div id="loading" class="loading hidden">フレンドを読み込み中...</div>
+            <div class="search-history" id="history"></div>
         </div>
 
         <div id="results-card" class="card hidden">
@@ -120,51 +79,90 @@
     <script>
         const API = 'https://discord.com/api/v9';
         let token = null;
-        let friends = []; // フレンドリストを保持（自分も含む）
+        let friends = [];
+        let searchHistory = [];
+
+        // localStorageからデータ復元
+        function loadData() {
+            const savedToken = localStorage.getItem('discord_token');
+            const savedFriends = localStorage.getItem('discord_friends');
+            const savedHistory = localStorage.getItem('discord_history');
+
+            if (savedToken) {
+                document.getElementById('token-input').value = savedToken;
+            }
+            if (savedFriends) {
+                friends = JSON.parse(savedFriends);
+            }
+            if (savedHistory) {
+                searchHistory = JSON.parse(savedHistory);
+                updateHistoryUI();
+            }
+
+            if (savedToken && friends.length > 0) {
+                autoConnect(savedToken);
+            }
+        }
+
+        async function autoConnect(savedToken) {
+            token = savedToken;
+            try {
+                const me = friends[0]; // 自分は先頭
+                document.getElementById('display-name').textContent = me.global_name || me.username;
+                document.getElementById('username-tag').textContent = me.global_name ? `${me.username}#${me.discriminator || '0'}` : '';
+                document.getElementById('avatar').src = me.avatar 
+                    ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=128`
+                    : 'https://cdn.discordapp.com/embed/avatars/0.png';
+
+                document.getElementById('token-card').classList.add('hidden');
+                document.getElementById('user-card').classList.remove('hidden');
+                document.getElementById('check-card').classList.remove('hidden');
+                document.getElementById('results-card').classList.remove('hidden');
+                addResult('info', `自動接続成功！フレンド ${friends.length-1}人 を読み込み済み`);
+            } catch (e) {
+                localStorage.clear();
+                alert('保存されたデータが無効です。全データ削除しました。');
+            }
+        }
 
         document.getElementById('connect-btn').onclick = async () => {
             token = document.getElementById('token-input').value.trim();
             if (!token) return alert('トークンを入力してください');
 
+            localStorage.setItem('discord_token', token); // 保存
+
             try {
-                // 自分の情報取得
                 const meRes = await fetch(`${API}/users/@me`, { headers: { 'Authorization': token } });
-                if (!meRes.ok) throw new Error('トークンが無効です');
+                if (!meRes.ok) throw new Error('無効なトークン');
                 const me = await meRes.json();
 
-                document.getElementById('username').textContent = me.username;
-                document.getElementById('tag').textContent = me.discriminator === '0' ? '' : `#${me.discriminator}`;
-                document.getElementById('avatar').src = me.avatar
+                document.getElementById('display-name').textContent = me.global_name || me.username;
+                document.getElementById('username-tag').textContent = me.global_name ? `${me.username}#${me.discriminator || '0'}` : '';
+                document.getElementById('avatar').src = me.avatar 
                     ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=128`
                     : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
-                // フレンドリスト取得
-                document.getElementById('loading').classList.remove('hidden');
+                // フレンド取得＆保存
                 const relRes = await fetch(`${API}/users/@me/relationships`, { headers: { 'Authorization': token } });
                 const relations = await relRes.json();
+                friends = [me];
 
-                friends = [me]; // 自分を追加
                 for (const rel of relations) {
-                    if (rel.type === 1) { // フレンドのみ
+                    if (rel.type === 1) {
                         try {
-                            const userRes = await fetch(`${API}/users/${rel.id}`, { headers: { 'Authorization': token } });
-                            if (userRes.ok) {
-                                const user = await userRes.json();
-                                friends.push(user);
-                            }
-                        } catch (e) {}
+                            const uRes = await fetch(`${API}/users/${rel.id}`, { headers: { 'Authorization': token } });
+                            if (uRes.ok) friends.push(await uRes.json());
+                        } catch {}
                     }
                 }
 
-                document.getElementById('loading').classList.add('hidden');
+                localStorage.setItem('discord_friends', JSON.stringify(friends)); // 保存
 
-                // UI表示
                 document.getElementById('token-card').classList.add('hidden');
                 document.getElementById('user-card').classList.remove('hidden');
                 document.getElementById('check-card').classList.remove('hidden');
                 document.getElementById('results-card').classList.remove('hidden');
-
-                addResult('info', `接続成功！フレンド ${friends.length - 1} 人を読み込みました（自分を含む合計 ${friends.length} 人）`);
+                addResult('info', `接続成功！フレンド ${friends.length-1}人 を保存しました`);
             } catch (e) {
                 alert('エラー: ' + e.message);
             }
@@ -177,73 +175,77 @@
             document.getElementById('results-list').prepend(li);
         }
 
+        function updateHistoryUI() {
+            const hist = document.getElementById('history');
+            hist.innerHTML = '検索履歴: ';
+            searchHistory.slice().reverse().forEach((q, i) => {
+                const span = document.createElement('span');
+                span.textContent = q;
+                span.className = 'search-history-item';
+                span.onclick = () => {
+                    document.getElementById('search-input').value = q;
+                    document.getElementById('search-btn').click();
+                };
+                hist.appendChild(span);
+                if (i < searchHistory.length - 1) hist.appendChild(document.createTextNode(' | '));
+            });
+        }
+
         document.getElementById('search-btn').onclick = () => {
-            const query = document.getElementById('search-input').value.trim().toLowerCase();
-            if (!query) return alert('検索クエリを入力してください');
+            let q = document.getElementById('search-input').value.trim();
+            if (!q) return;
 
-            document.getElementById('results-list').innerHTML = ''; // クリア
+            // 履歴に追加（重複除去）
+            if (!searchHistory.includes(q)) {
+                searchHistory.unshift(q);
+                if (searchHistory.length > 20) searchHistory.pop();
+                localStorage.setItem('discord_history', JSON.stringify(searchHistory));
+                updateHistoryUI();
+            }
 
+            document.getElementById('results-list').innerHTML = '';
+
+            const query = q.toLowerCase();
             let found = false;
 
-            // ID検索（数字のみ）
-            if (/^\d{17,20}$/.test(query)) {
-                const user = friends.find(u => u.id === query);
-                if (user) {
-                    displayUserDetails(user);
-                    found = true;
-                } else {
-                    addResult('error', `<i class="fas fa-times"></i> ID ${query} はフレンドリストに見つかりませんでした`);
-                }
-            } else {
-                // ユーザー名検索（#タグ対応）
-                const results = friends.filter(u => {
-                    const full = `${u.username.toLowerCase()}#${u.discriminator || '0'}`;
-                    return u.username.toLowerCase().includes(query) || full.includes(query);
-                });
+            for (const user of friends) {
+                const display = (user.global_name || user.username || '').toLowerCase();
+                const username = user.username.toLowerCase();
+                const full = `${user.username}#${user.discriminator || '0'}`.toLowerCase();
+                const id = user.id;
 
-                if (results.length > 0) {
-                    addResult('info', `<i class="fas fa-search"></i> 「${query}」で ${results.length} 件ヒット`);
-                    results.forEach(user => displayUserDetails(user));
+                if (id === query || display.includes(query) || username.includes(query) || full.includes(query)) {
+                    const dispName = user.global_name || user.username;
+                    let html = `
+                        <div class="display-name">${dispName}</div>
+                        <div class="username">${user.username}#${user.discriminator || '0'}</div>
+                        <div class="user-id">ID: ${user.id}</div>
+                    `;
+                    if (user.email) {
+                        html += `<div class="email-info">メール: ${user.email} ${user.verified ? '認証済' : '未認証'}</div>`;
+                    }
+                    addResult('success', html);
                     found = true;
                 }
             }
 
-            if (!found) {
-                addResult('error', `<i class="fas fa-times"></i> 「${query}」に一致するユーザーはフレンド内にいませんでした`);
-            }
-
+            if (!found) addResult('error', `「${q}」に一致するユーザーは見つかりませんでした`);
             document.getElementById('search-input').value = '';
         };
 
-        function displayUserDetails(u) {
-            let text = `<i class="fas fa-user"></i> <strong>${u.username}#${u.discriminator || '0'}</strong> (ID: ${u.id})`;
-
-            if (u.email) {
-                text += `<div class="email-info">メール: ${u.email} ${u.verified ? '(認証済み)' : '(未認証)'}</div>`;
-            } else if (u.id === friends[0].id) {
-                text += `<div class="email-info">メール: 自分のため表示可能（API制限により非表示の場合あり）</div>`;
-            } else {
-                text += `<div class="email-info">メール: 非公開または取得不可</div>`;
-            }
-
-            addResult('success', text);
-        }
-
         document.getElementById('logout-btn').onclick = () => {
-            token = null;
-            friends = [];
-            document.getElementById('token-input').value = '';
-            document.getElementById('results-list').innerHTML = '';
-            document.getElementById('token-card').classList.remove('hidden');
-            document.getElementById('user-card').classList.add('hidden');
-            document.getElementById('check-card').classList.add('hidden');
-            document.getElementById('results-card').classList.add('hidden');
+            if (confirm('すべての保存データを削除してログアウトしますか？')) {
+                localStorage.clear();
+                location.reload();
+            }
         };
 
-        // Enterで検索
         document.getElementById('search-input').addEventListener('keypress', e => {
             if (e.key === 'Enter') document.getElementById('search-btn').click();
         });
+
+        // ページ読み込み時にデータ復元
+        loadData();
     </script>
 </body>
 </html>
