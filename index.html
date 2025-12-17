@@ -3,565 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TogetherBot - Discordサーバーを一つに</title>
+    <title>Discord アカウント存在確認ツール（保存なし）</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --discord-primary: #5865F2;
+            --discord-secondary: #4752C4;
+            --discord-darkest: #202225;
+            --discord-dark: #2f3136;
+            --discord-darker: #36393f;
+            --discord-light: #dcddde;
+            --discord-danger: #ed4245;
+            --discord-success: #3ba55d;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            overflow-x: hidden;
+            background-color: #202225;
+            color: #dcddde;
+            font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 800px;
             margin: 0 auto;
-            padding: 0 20px;
         }
 
         header {
-            padding: 20px 0;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-            backdrop-filter: blur(10px);
-            background: rgba(102, 126, 234, 0.1);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-size: 28px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #ff6b6b, #feca57);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 30px;
-            list-style: none;
-        }
-
-        .nav-links a {
-            color: #fff;
-            text-decoration: none;
-            font-weight: 500;
-            transition: opacity 0.3s;
-        }
-
-        .nav-links a:hover {
-            opacity: 0.7;
-        }
-
-        .hero {
-            padding: 150px 0 100px;
             text-align: center;
+            padding: 20px;
+            border-bottom: 1px solid #36393f;
         }
 
-        h1 {
-            font-size: 64px;
-            margin-bottom: 20px;
-            animation: fadeInUp 1s;
+        h1 { color: white; }
+        .card {
+            background: #2f3136;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
         }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .subtitle {
-            font-size: 24px;
-            margin-bottom: 40px;
-            opacity: 0.9;
-            animation: fadeInUp 1s 0.2s both;
-        }
-
-        .cta-buttons {
+        .input-group {
             display: flex;
-            gap: 20px;
-            justify-content: center;
-            animation: fadeInUp 1s 0.4s both;
+            margin-bottom: 15px;
         }
 
-        .btn {
-            padding: 15px 40px;
-            font-size: 18px;
-            border-radius: 50px;
+        input {
+            flex: 1;
+            padding: 12px;
+            background: #202225;
+            border: none;
+            color: white;
+            border-radius: 4px 0 0 4px;
+        }
+
+        button {
+            padding: 12px 20px;
+            background: var(--discord-primary);
+            color: white;
             border: none;
             cursor: pointer;
-            font-weight: 600;
-            transition: transform 0.3s, box-shadow 0.3s;
-            text-decoration: none;
-            display: inline-block;
+            border-radius: 0 4px 4px 0;
         }
 
-        .btn-primary {
-            background: #fff;
-            color: #667eea;
-        }
+        button:hover { background: var(--discord-secondary); }
+        button.danger { background: var(--discord-danger); }
+        button.danger:hover { background: #c03537; }
 
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.2);
-            color: #fff;
-            border: 2px solid #fff;
-        }
-
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .features {
-            padding: 80px 0;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-        }
-
-        .features h2 {
-            text-align: center;
-            font-size: 48px;
-            margin-bottom: 60px;
-        }
-
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 40px;
-        }
-
-        .feature-card {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 40px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: transform 0.3s;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-10px);
-        }
-
-        .feature-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
-        }
-
-        .feature-card h3 {
-            font-size: 24px;
-            margin-bottom: 15px;
-        }
-
-        .feature-card p {
-            opacity: 0.9;
-            line-height: 1.6;
-        }
-
-        .commands {
-            padding: 80px 0;
-        }
-
-        .commands h2 {
-            text-align: center;
-            font-size: 48px;
-            margin-bottom: 60px;
-        }
-
-        .commands-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 30px;
-        }
-
-        .command-section {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 30px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .command-section h3 {
-            font-size: 28px;
-            margin-bottom: 20px;
-            color: #feca57;
-        }
-
-        .command-section h4 {
-            font-size: 20px;
-            margin: 20px 0 10px;
-            color: #ff6b6b;
-        }
-
-        .command-item {
-            padding: 12px;
+        #results-list li {
+            padding: 10px;
             margin: 8px 0;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            border-left: 3px solid #feca57;
+            border-radius: 4px;
         }
 
-        .command-item code {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 3px 8px;
-            border-radius: 5px;
-            font-family: 'Courier New', monospace;
-            color: #feca57;
-        }
+        .success { background: rgba(59,165,93,0.2); border-left: 4px solid var(--discord-success); }
+        .error { background: rgba(237,66,69,0.2); border-left: 4px solid var(--discord-danger); }
 
-        .stats {
-            padding: 80px 0;
-            text-align: center;
-            background: rgba(255, 255, 255, 0.1);
-        }
+        .hidden { display: none; }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 40px;
-            margin-top: 40px;
-        }
-
-        .stat-item h3 {
-            font-size: 48px;
-            margin-bottom: 10px;
-            color: #feca57;
-        }
-
-        .stat-item p {
-            font-size: 18px;
-            opacity: 0.9;
-        }
-
-        .warning {
-            padding: 80px 0;
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-        }
-
-        .warning-content {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 40px;
-            border-radius: 20px;
-            border: 3px solid #fff;
-            text-align: center;
-        }
-
-        .warning-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-            animation: shake 0.5s infinite;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-5deg); }
-            75% { transform: rotate(5deg); }
-        }
-
-        .warning h2 {
-            font-size: 42px;
-            margin-bottom: 20px;
-        }
-
-        .warning-text {
-            font-size: 20px;
-            line-height: 1.8;
-            margin-bottom: 15px;
-        }
-
-        .official-id {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 20px;
-            border-radius: 15px;
-            margin-top: 30px;
-            display: inline-block;
-        }
-
-        .official-id code {
-            font-size: 24px;
-            color: #feca57;
-            font-weight: bold;
-            font-family: 'Courier New', monospace;
-        }
-
-        footer {
-            padding: 40px 0;
-            text-align: center;
-            background: rgba(0, 0, 0, 0.2);
-            margin-top: 80px;
-        }
-
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 42px;
-            }
-
-            .subtitle {
-                font-size: 18px;
-            }
-
-            .cta-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .nav-links {
-                display: none;
-            }
-
-            .commands-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        .disclaimer { font-size: 0.9em; color: #72767d; margin-top: 15px; }
     </style>
 </head>
 <body>
-    <header>
-        <nav class="container">
-            <div class="logo">
-                <div class="logo-icon">🤝</div>
-                <span>TogetherBot</span>
-            </div>
-            <ul class="nav-links">
-                <li><a href="#warning">⚠️ 重要</a></li>
-                <li><a href="#features">機能</a></li>
-                <li><a href="#commands">コマンド</a></li>
-                <li><a href="https://togetherbot.jimdosite.com/" target="_blank">公式サイト</a></li>
-                <li><a href="#invite">招待</a></li>
-            </ul>
-        </nav>
-    </header>
+    <div class="container">
+        <header>
+            <h1><i class="fab fa-discord"></i> Discord アカウント存在確認ツール</h1>
+            <p>保存なし・痕跡残らず版（タブ閉じたらすべて消えます）</p>
+        </header>
 
-    <section class="hero">
-        <div class="container">
-            <h1>TogetherBot</h1>
-            <p class="subtitle">ロール認証とモデレーションの決定版Bot</p>
-            <div class="cta-buttons">
-                <a href="https://discord.com/oauth2/authorize?client_id=1418365961043447889&permissions=8&integration_type=0&scope=bot" class="btn btn-primary" target="_blank">Botを招待する</a>
-                <a href="https://togetherbot.jimdosite.com/" class="btn btn-secondary" target="_blank">詳細情報</a>
+        <div id="token-card" class="card">
+            <h2>Discordトークンを入力</h2>
+            <p>あなたのDiscordユーザートークンを入力してください（どこにも保存されません）</p>
+            <div class="input-group">
+                <input type="password" id="token-input" placeholder="トークンをここに貼り付け">
+                <button id="connect-btn">接続</button>
+            </div>
+            <div class="disclaimer">
+                ⚠️ このページはブラウザ内でしか動きません。トークンは外部に一切送信されません。<br>
+                ⚠️ 使い終わったらタブを閉じてください。リロードしても入力内容は消えます。<br>
+                ⚠️ 自己責任でお使いください。
             </div>
         </div>
-    </section>
 
-    <section class="warning" id="warning">
-        <div class="container">
-            <div class="warning-content">
-                <div class="warning-icon">⚠️</div>
-                <h2>【重要なお知らせ】偽物Botにご注意ください</h2>
-                <p class="warning-text">
-                    現在、TogetherBotを装った偽物のBotが出現しております。<br>
-                    <strong>偽物Botは「乗っ取り」などと宣言していますが、公式TogetherBotは一切そのような行為を行っておりません。</strong>
-                </p>
-                <p class="warning-text">
-                    必ず下記の公式Bot IDを確認してから招待してください。
-                </p>
-                <div class="official-id">
-                    <p style="margin-bottom: 10px; font-size: 18px;">公式Bot ID</p>
-                    <code>1418365961043447889</code>
+        <div id="user-card" class="card hidden">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <img id="avatar" src="" width="64" height="64" style="border-radius:50%;">
+                    <div>
+                        <h3 id="username">読み込み中...</h3>
+                        <p id="tag"></p>
+                    </div>
                 </div>
-                <p class="warning-text" style="margin-top: 30px; font-size: 18px;">
-                    公式招待リンク以外からの招待は絶対にお控えください。<br>
-                    このページの「Botを招待する」ボタンのみが公式リンクです。<br>
-                    <a href="https://togetherbot.jimdosite.com/" target="_blank" style="color: #feca57; text-decoration: underline; font-weight: bold;">詳しい情報はこちらの公式サイトをご覧ください</a>
-                </p>
-                <p class="warning-text" style="margin-top: 20px; font-size: 16px; opacity: 0.9;">
-                    ※ このページはGoogle検索のみで見つけられるようにindex.htmlを使用しています
-                </p>
+                <button id="logout-btn" class="danger">ログアウト</button>
             </div>
         </div>
-    </section>
 
-    <section class="features" id="features">
-        <div class="container">
-            <h2>主な機能</h2>
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">✅</div>
-                    <h3>ロール認証</h3>
-                    <p>簡単な認証パネルでサーバーメンバーにロールを付与。セキュリティとアクセス管理を簡素化</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🛡️</div>
-                    <h3>モデレーション</h3>
-                    <p>キック、BAN、タイムアウトなど、サーバー管理に必要な機能を網羅</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📝</div>
-                    <h3>ログ機能</h3>
-                    <p>認証ログやモデレーションアクションを指定チャンネルに記録</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🎮</div>
-                    <h3>エンタメコマンド</h3>
-                    <p>サイコロ、コイントス、運勢占いでコミュニティを盛り上げる</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">📊</div>
-                    <h3>情報表示</h3>
-                    <p>ユーザー情報、サーバー情報、アバターなどを簡単に確認</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">⚙️</div>
-                    <h3>柔軟な設定</h3>
-                    <p>ステータスメッセージやロール管理を自由にカスタマイズ可能</p>
-                </div>
+        <div id="check-card" class="card hidden">
+            <h2>ユーザーIDでアカウント存在確認</h2>
+            <p>確認したいDiscordユーザーIDを入力（数字17～19桁）</p>
+            <div class="input-group">
+                <input type="text" id="userid-input" placeholder="例: 123456789012345678">
+                <button id="check-btn">確認</button>
             </div>
         </div>
-    </section>
 
-    <section class="commands" id="commands">
-        <div class="container">
-            <h2>コマンド一覧</h2>
-            <div class="commands-grid">
-                <div class="command-section">
-                    <h3>👥 全員が使えるコマンド</h3>
-                    <div class="command-item">
-                        <code>/help</code> - ヘルプを表示
-                    </div>
-                    <div class="command-item">
-                        <code>/botinfo</code> - ボット詳細情報
-                    </div>
-                    <div class="command-item">
-                        <code>/userinfo</code> - ユーザー情報を表示
-                    </div>
-                    <div class="command-item">
-                        <code>/serverinfo</code> - サーバー情報を表示
-                    </div>
-                    <div class="command-item">
-                        <code>/avatar</code> - アバターを表示
-                    </div>
-                    <div class="command-item">
-                        <code>/dice</code> - サイコロを振る
-                    </div>
-                    <div class="command-item">
-                        <code>/coinflip</code> - コイントス
-                    </div>
-                    <div class="command-item">
-                        <code>/fortune</code> - 今日の運勢
-                    </div>
-                </div>
-
-                <div class="command-section">
-                    <h3>👑 管理者コマンド</h3>
-                    
-                    <h4>認証機能</h4>
-                    <div class="command-item">
-                        <code>/verify [ロール]</code> - 認証パネル作成
-                    </div>
-                    <div class="command-item">
-                        <code>/auth_setlog [チャンネル]</code> - ログチャンネル設定
-                    </div>
-                    <div class="command-item">
-                        <code>/setstatus [message/clear]</code> - ステータス設定
-                    </div>
-
-                    <h4>モデレーション</h4>
-                    <div class="command-item">
-                        <code>/kick [メンバー] [理由]</code> - メンバーをキック
-                    </div>
-                    <div class="command-item">
-                        <code>/ban [メンバー] [理由]</code> - メンバーをBAN
-                    </div>
-                    <div class="command-item">
-                        <code>/timeout [メンバー] [分] [理由]</code> - タイムアウト
-                    </div>
-                    <div class="command-item">
-                        <code>/clear [数]</code> - メッセージ削除
-                    </div>
-                    <div class="command-item">
-                        <code>/cleardm [ユーザー] [数]</code> - DMメッセージ削除
-                    </div>
-
-                    <h4>ロール管理</h4>
-                    <div class="command-item">
-                        <code>/addrole [メンバー] [ロール]</code> - ロール付与
-                    </div>
-                    <div class="command-item">
-                        <code>/removerole [メンバー] [ロール]</code> - ロール削除
-                    </div>
-                </div>
-            </div>
+        <div id="results-card" class="card hidden">
+            <h2>結果（リロードで消えます）</h2>
+            <ul id="results-list"></ul>
         </div>
-    </section>
+    </div>
 
-    <section class="stats">
-        <div class="container">
-            <h2>TogetherBotの特徴</h2>
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <h3>高速</h3>
-                    <p>瞬時に応答</p>
-                </div>
-                <div class="stat-item">
-                    <h3>安定</h3>
-                    <p>99.9%稼働率</p>
-                </div>
-                <div class="stat-item">
-                    <h3>簡単</h3>
-                    <p>直感的な操作</p>
-                </div>
-                <div class="stat-item">
-                    <h3>無料</h3>
-                    <p>完全無料で利用可能</p>
-                </div>
-            </div>
-        </div>
-    </section>
+    <script>
+        const API = 'https://discord.com/api/v9';
+        let token = null;
 
-    <section class="hero" id="invite">
-        <div class="container">
-            <h2 style="margin-bottom: 20px;">今すぐ始めよう</h2>
-            <p class="subtitle">TogetherBotをあなたのサーバーに招待して、<br>サーバー管理を簡単に</p>
-            <div class="cta-buttons">
-                <a href="https://discord.com/oauth2/authorize?client_id=1418365961043447889&permissions=8&integration_type=0&scope=bot" class="btn btn-primary" target="_blank">Botを招待する</a>
-                <a href="https://togetherbot.jimdosite.com/" class="btn btn-secondary" target="_blank">公式サイトで詳細を見る</a>
-            </div>
-        </div>
-    </section>
+        document.getElementById('connect-btn').onclick = async () => {
+            token = document.getElementById('token-input').value.trim();
+            if (!token) return alert('トークンを入力してください');
 
-    <footer>
-        <div class="container">
-            <p>&copy; 2025 TogetherBot Team. All rights reserved.</p>
-            <p style="margin-top: 10px; opacity: 0.7;">
-                <a href="https://togetherbot.jimdosite.com/" target="_blank" style="color: #feca57; text-decoration: none;">公式サイト: togetherbot.jimdosite.com</a>
-            </p>
-        </div>
-    </footer>
+            try {
+                const res = await fetch(`${API}/users/@me`, {
+                    headers: { 'Authorization': token }
+                });
+
+                if (!res.ok) throw new Error('トークンが無効です');
+
+                const user = await res.json();
+                document.getElementById('username').textContent = user.username;
+                document.getElementById('tag').textContent = `#${user.discriminator}`;
+                document.getElementById('avatar').src = user.avatar 
+                    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`
+                    : 'https://cdn.discordapp.com/embed/avatars/0.png';
+
+                document.getElementById('token-card').classList.add('hidden');
+                document.getElementById('user-card').classList.remove('hidden');
+                document.getElementById('check-card').classList.remove('hidden');
+            } catch (e) {
+                alert('トークンが正しくありません: ' + e.message);
+            }
+        };
+
+        document.getElementById('logout-btn').onclick = () => {
+            token = null;
+            document.getElementById('token-input').value = '';
+            document.getElementById('token-card').classList.remove('hidden');
+            document.getElementById('user-card').classList.add('hidden');
+            document.getElementById('check-card').classList.add('hidden');
+            document.getElementById('results-card').classList.add('hidden');
+            document.getElementById('results-list').innerHTML = '';
+        };
+
+        document.getElementById('check-btn').onclick = async () => {
+            const uid = document.getElementById('userid-input').value.trim();
+            if (!/^\d{17,20}$/.test(uid)) return alert('正しいユーザーIDを入力してください（17～19桁の数字）');
+
+            const li = document.createElement('li');
+            document.getElementById('results-card').classList.remove('hidden');
+
+            try {
+                const res = await fetch(`${API}/users/${uid}`, {
+                    headers: { 'Authorization': token }
+                });
+
+                if (res.ok) {
+                    const u = await res.json();
+                    li.className = 'success';
+                    li.innerHTML = `<i class="fas fa-check"></i> 存在します → ${u.username}#${u.discriminator} (ID: ${uid})`;
+                } else if (res.status === 404) {
+                    li.className = 'error';
+                    li.innerHTML = `<i class="fas fa-times"></i> 存在しません（削除済みまたは無効） → ID: ${uid}`;
+                } else {
+                    throw new Error(res.status);
+                }
+            } catch (e) {
+                li.className = 'error';
+                li.innerHTML = `<i class="fas fa-times"></i> エラー: ${e.message || '不明なエラー'}`;
+            }
+
+            document.getElementById('results-list').prepend(li); // 新しい結果を上に表示
+            document.getElementById('userid-input').value = '';
+        };
+
+        // Enterキーでもチェック可能
+        document.getElementById('userid-input').addEventListener('keypress', e => {
+            if (e.key === 'Enter') document.getElementById('check-btn').click();
+        });
+    </script>
 </body>
 </html>
