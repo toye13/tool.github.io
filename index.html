@@ -3,463 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord アカウント存在確認ツール</title>
+    <title>Discord サーバー参加ツール</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* 簡易スタイル（元のstyles.cssを基に簡略化） */
-        :root {
-            --discord-primary: #5865F2;
-            --discord-secondary: #4752C4;
-            --discord-dark: #36393f;
-            --discord-darker: #2f3136;
-            --discord-darkest: #202225;
-            --discord-light: #dcddde;
-            --discord-lighter: #ffffff;
-            --discord-danger: #ed4245;
-            --discord-success: #3ba55d;
-            --discord-warning: #faa81a;
-            --transition-speed: 0.3s;
-        }
-
-        .theme-dark {
-            --bg-primary: var(--discord-darkest);
-            --bg-secondary: var(--discord-dark);
-            --bg-tertiary: var(--discord-darker);
-            --text-normal: var(--discord-light);
-            --text-muted: #72767d;
-            --text-bright: var(--discord-lighter);
-            --interactive-normal: #b9bbbe;
-            --interactive-hover: var(--discord-lighter);
-            --interactive-active: var(--discord-lighter);
-            --input-bg: var(--discord-darker);
-        }
-
-        .theme-light {
-            --bg-primary: #f2f3f5;
-            --bg-secondary: #ffffff;
-            --bg-tertiary: #e3e5e8;
-            --text-normal: #2e3338;
-            --text-muted: #747f8d;
-            --text-bright: #060607;
-            --interactive-normal: #4f5660;
-            --interactive-hover: #2e3338;
-            --interactive-active: #060607;
-            --input-bg: #ebedef;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-primary);
-            color: var(--text-normal);
-            line-height: 1.6;
-            padding: 20px;
-            transition: background-color var(--transition-speed), color var(--transition-speed);
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            border-bottom: 1px solid var(--bg-tertiary);
-        }
-
-        header h1 {
-            color: var(--text-bright);
-            margin-bottom: 10px;
-        }
-
-        .card {
-            background-color: var(--bg-secondary);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .discord-btn {
-            background-color: var(--discord-primary);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 10px 15px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .discord-btn:hover {
-            background-color: var(--discord-secondary);
-        }
-
-        .discord-btn.danger {
-            background-color: var(--discord-danger);
-        }
-
-        .input-group {
-            display: flex;
-            margin-bottom: 15px;
-        }
-
-        .input-group input {
-            flex-grow: 1;
-            padding: 10px;
-            border: none;
-            background-color: var(--input-bg);
-            color: var(--text-normal);
-            border-radius: 4px 0 0 4px;
-        }
-
-        .input-group button {
-            border-radius: 0 4px 4px 0;
-        }
-
-        #results-container {
-            margin-top: 30px;
-        }
-
-        #results-list {
-            list-style: none;
-            margin-top: 10px;
-        }
-
-        #results-list li {
-            padding: 8px;
-            border-radius: 4px;
-            margin-bottom: 5px;
-        }
-
-        #results-list li.success {
-            background-color: rgba(59, 165, 93, 0.1);
-            border-left: 3px solid var(--discord-success);
-        }
-
-        #results-list li.error {
-            background-color: rgba(237, 66, 69, 0.1);
-            border-left: 3px solid var(--discord-danger);
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .settings-bar {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .language-selector, .theme-selector {
-            display: flex;
-            gap: 5px;
-        }
-
-        .lang-btn, .theme-btn {
-            background-color: var(--bg-tertiary);
-            color: var(--text-normal);
-            border: none;
-            border-radius: 4px;
-            padding: 6px 10px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-
-        .lang-btn.active, .theme-btn.active {
-            background-color: var(--discord-primary);
-            color: white;
-        }
+        body { background:#202225; color:#dcddde; font-family:'Whitney',sans-serif; padding:20px; margin:0; }
+        .container { max-width:800px; margin:0 auto; }
+        header { text-align:center; padding:20px; border-bottom:1px solid #36393f; }
+        h1 { color:white; }
+        .card { background:#2f3136; border-radius:8px; padding:20px; margin:20px 0; }
+        .input-group { display:flex; flex-direction:column; gap:15px; margin-bottom:20px; }
+        input { padding:12px; background:#202225; border:none; color:white; border-radius:4px; }
+        button { padding:12px 20px; background:#5865F2; color:white; border:none; cursor:pointer; border-radius:4px; }
+        button:hover { background:#4752C4; }
+        button.danger { background:#ed4245; }
+        button.danger:hover { background:#c03537; }
+        .result { padding:15px; border-radius:8px; margin-top:20px; font-weight:bold; }
+        .success { background:rgba(59,165,93,0.2); border-left:4px solid #3ba55d; }
+        .error { background:rgba(237,66,69,0.2); border-left:4px solid #ed4245; }
+        .hidden { display:none; }
+        .disclaimer { font-size:0.9em; color:#72767d; margin-top:15px; line-height:1.5; }
     </style>
 </head>
-<body class="theme-dark">
+<body>
     <div class="container">
         <header>
-            <h1><i class="fab fa-discord"></i> <span data-lang="title">Discord アカウント存在確認ツール</span></h1>
-            <p data-lang="subtitle">DiscordユーザーIDを入力してアカウントの存在を確認できます</p>
-            
-            <div class="settings-bar">
-                <div class="language-selector">
-                    <button id="lang-ja" class="lang-btn active">日本語</button>
-                    <button id="lang-en" class="lang-btn">English</button>
-                </div>
-                
-                <div class="theme-selector">
-                    <button id="theme-dark" class="theme-btn active"><i class="fas fa-moon"></i></button>
-                    <button id="theme-light" class="theme-btn"><i class="fas fa-sun"></i></button>
-                </div>
-            </div>
+            <h1><i class="fab fa-discord"></i> Discord サーバー参加ツール</h1>
+            <p>ユーザー・トークンで招待リンクからサーバーに参加</p>
         </header>
 
-        <main>
-            <div id="token-container" class="card">
-                <h2 data-lang="token-title">Discord ユーザートークンを入力</h2>
-                <p data-lang="token-desc">あなたのDiscordユーザートークンを入力して接続してください：</p>
-                <div class="input-group">
-                    <input type="password" id="token-input" data-lang-placeholder="token-placeholder" placeholder="Discordユーザートークンを貼り付けてください">
-                    <button id="token-submit" class="discord-btn" data-lang="connect">接続</button>
-                </div>
-                <div class="disclaimer">
-                    <p data-lang="disclaimer-1">⚠️ このツールはブラウザ上でのみ実行されます。あなたのトークンがサーバーに送信されることはありません。</p>
-                    <p data-lang="disclaimer-2">⚠️ 自己責任で使用してください。このツールはDiscordと提携していません。</p>
-                    <p data-lang="disclaimer-3">⚠️ ユーザートークンの使用はDiscordの利用規約に違反する可能性があります。</p>
-                </div>
+        <div class="card">
+            <h2>トークンと招待リンクを入力</h2>
+            <div class="input-group">
+                <input type="password" id="token-input" placeholder="Discordユーザー・トークン（保存されます）">
+                <input type="text" id="invite-input" placeholder="招待リンクまたはコード（例: abc123 または https://discord.gg/abc123）">
             </div>
+            <button id="join-btn">サーバーに参加</button>
+            <button id="clear-btn" class="danger" style="margin-left:10px;">トークン削除</button>
 
-            <div id="user-info" class="card hidden">
-                <div id="user-profile">
-                    <img id="user-avatar" src="" alt="ユーザーアバター">
-                    <div>
-                        <h2 id="username">未ログイン</h2>
-                        <p id="user-tag"></p>
-                    </div>
-                </div>
-                <button id="logout-button" class="discord-btn danger" data-lang="logout">ログアウト</button>
+            <div class="disclaimer">
+                ⚠️ ユーザー・トークンでのサーバー参加は規約グレーゾーンです。過度な使用はアカウント凍結のリスクがあります。<br>
+                ⚠️ スパム・迷惑行為には絶対に使用しないでください。<br>
+                ⚠️ 自己責任でお使いください。
             </div>
-
-            <div id="check-container" class="card hidden">
-                <h2 data-lang="check-title">アカウント存在確認</h2>
-                <p data-lang="check-desc">確認したいユーザーIDを入力してください：</p>
-                <div class="input-group">
-                    <input type="text" id="user-id-input" data-lang-placeholder="user-id-placeholder" placeholder="ユーザーIDを入力（例: 123456789012345678）">
-                    <button id="check-button" class="discord-btn" data-lang="check">確認</button>
-                </div>
-            </div>
-        </main>
-
-        <div id="results-container" class="card hidden">
-            <h2 data-lang="results">結果</h2>
-            <ul id="results-list"></ul>
         </div>
 
-        <footer>
-            <p data-lang="created-by">作成者: Nanachi (Modified for account check)</p>
-            <p class="small-text"><span data-lang="updated-date">更新日:</span> 2025-12-17</p>        </footer>
+        <div id="result" class="result hidden"></div>
+
+        <div class="card hidden" id="user-card">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <img id="avatar" src="" width="64" height="64" style="border-radius:50%;">
+                <div>
+                    <h3 id="username">接続済み</h3>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const API_ENDPOINT = 'https://discord.com/api/v9';
-            
-            let userToken = null;
-            let currentLanguage = 'ja';
-            let currentTheme = 'dark';
-            
-            // DOM要素
-            const tokenInput = document.getElementById('token-input');
-            const tokenSubmit = document.getElementById('token-submit');
-            const logoutButton = document.getElementById('logout-button');
-            const checkButton = document.getElementById('check-button');
-            const userIdInput = document.getElementById('user-id-input');
-            const resultsContainer = document.getElementById('results-container');
-            const resultsList = document.getElementById('results-list');
-            const langJaBtn = document.getElementById('lang-ja');
-            const langEnBtn = document.getElementById('lang-en');
-            const themeDarkBtn = document.getElementById('theme-dark');
-            const themeLightBtn = document.getElementById('theme-light');
-            
-            // 言語辞書（元のものを基に拡張）
-            const langDict = {
-                'ja': {
-                    'title': 'Discord アカウント存在確認ツール',
-                    'subtitle': 'DiscordユーザーIDを入力してアカウントの存在を確認できます',
-                    'token-title': 'Discord ユーザートークンを入力',
-                    'token-desc': 'あなたのDiscordユーザートークンを入力して接続してください：',
-                    'token-placeholder': 'Discordユーザートークンを貼り付けてください',
-                    'connect': '接続',
-                    'disclaimer-1': '⚠️ このツールはブラウザ上でのみ実行されます。あなたのトークンがサーバーに送信されることはありません。',
-                    'disclaimer-2': '⚠️ 自己責任で使用してください。このツールはDiscordと提携していません。',
-                    'disclaimer-3': '⚠️ ユーザートークンの使用はDiscordの利用規約に違反する可能性があります。',
-                    'logout': 'ログアウト',
-                    'check-title': 'アカウント存在確認',
-                    'check-desc': '確認したいユーザーIDを入力してください：',
-                    'user-id-placeholder': 'ユーザーIDを入力（例: 123456789012345678）',
-                    'check': '確認',
-                    'results': '結果',
-                    'created-by': '作成者: Nanachi (Modified for account check)',
-                    'updated-date': '更新日: ',
-                    'source-code': 'ソースコード: ',
-                    'account-exists': 'アカウントが存在します: ',
-                    'account-not-exists': 'アカウントが存在しません: ',
-                    'error-check': '確認に失敗しました: '
-                },
-                'en': {
-                    'title': 'Discord Account Existence Checker',
-                    'subtitle': 'Check if a Discord account exists by entering a user ID',
-                    'token-title': 'Enter Discord User Token',
-                    'token-desc': 'Enter your Discord user token to connect:',
-                    'token-placeholder': 'Paste your Discord user token here',
-                    'connect': 'Connect',
-                    'disclaimer-1': '⚠️ This tool runs only in your browser. Your token will not be sent to any server.',
-                    'disclaimer-2': '⚠️ Use at your own risk. This tool is not affiliated with Discord.',
-                    'disclaimer-3': '⚠️ Using user tokens may violate Discord\'s Terms of Service.',
-                    'logout': 'Logout',
-                    'check-title': 'Account Existence Check',
-                    'check-desc': 'Enter the user ID you want to check:',
-                    'user-id-placeholder': 'Enter user ID (e.g., 123456789012345678)',
-                    'check': 'Check',
-                    'results': 'Results',
-                    'created-by': 'Created by: Nanachi (Modified for account check)',
-                    'updated-date': 'Updated: ',
-                    'source-code': 'Source code: ',
-                    'account-exists': 'Account exists: ',
-                    'account-not-exists': 'Account does not exist: ',
-                    'error-check': 'Failed to check: '
-                }
-            };
-            
-            // テーマ変更関数（元のものを再利用）
-            function setTheme(theme) {
-                document.body.classList.remove('theme-dark', 'theme-light');
-                document.body.classList.add(`theme-${theme}`);
-                themeDarkBtn.classList.toggle('active', theme === 'dark');
-                themeLightBtn.classList.toggle('active', theme === 'light');
-                currentTheme = theme;
-                localStorage.setItem('discord_theme', theme);
-            }
-            
-            // 言語変更関数（元のものを再利用）
-            function setLanguage(lang) {
-                currentLanguage = lang;
-                langJaBtn.classList.toggle('active', lang === 'ja');
-                langEnBtn.classList.toggle('active', lang === 'en');
-                document.documentElement.setAttribute('lang', lang);
-                
-                document.querySelectorAll('[data-lang]').forEach(el => {
-                    const key = el.getAttribute('data-lang');
-                    if (langDict[lang][key]) el.textContent = langDict[lang][key];
+        const API = 'https://discord.com/api/v9';
+        let token = null;
+
+        // 招待コード抽出
+        function extractCode(link) {
+            const match = link.match(/discord(?:app)?\.com\/invite\/([a-zA-Z0-9-]+)/) || link.match(/^([a-zA-Z0-9-]+)$/);
+            return match ? match[1] : null;
+        }
+
+        document.getElementById('join-btn').onclick = async () => {
+            token = document.getElementById('token-input').value.trim();
+            const rawInvite = document.getElementById('invite-input').value.trim();
+
+            if (!token) return alert('トークンを入力してください');
+            if (!rawInvite) return alert('招待リンクまたはコードを入力してください');
+
+            const code = extractCode(rawInvite);
+            if (!code) return alert('有効な招待リンクまたはコードを入力してください');
+
+            localStorage.setItem('discord_token', token); // 保存
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.classList.remove('hidden', 'success', 'error');
+
+            try {
+                // まず自分の情報取得（トークン確認）
+                const meRes = await fetch(`${API}/users/@me`, { headers: { 'Authorization': token } });
+                if (!meRes.ok) throw new Error('トークンが無効です');
+
+                const me = await meRes.json();
+                document.getElementById('username').textContent = me.global_name || me.username;
+                document.getElementById('avatar').src = me.avatar 
+                    ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=128`
+                    : 'https://cdn.discordapp.com/embed/avatars/0.png';
+                document.getElementById('user-card').classList.remove('hidden');
+
+                // サーバー参加
+                const joinRes = await fetch(`${API}/invites/${code}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
                 });
-                
-                document.querySelectorAll('[data-lang-placeholder]').forEach(el => {
-                    const key = el.getAttribute('data-lang-placeholder');
-                    if (langDict[lang][key]) el.placeholder = langDict[lang][key];
-                });
-                
-                localStorage.setItem('discord_language', lang);
-            }
-            
-            // トークン設定とユーザー情報取得（元のsetToken関数を基に）
-            async function setToken(token) {
-                userToken = token;
-                localStorage.setItem('discord_token', token);
-                document.getElementById('token-container').classList.add('hidden');
-                document.getElementById('user-info').classList.remove('hidden');
-                document.getElementById('check-container').classList.remove('hidden');
-                
-                try {
-                    const response = await fetch(`${API_ENDPOINT}/users/@me`, {
-                        headers: { 'Authorization': userToken }
-                    });
-                    
-                    if (!response.ok) throw new Error('Invalid token');
-                    
-                    const user = await response.json();
-                    document.getElementById('username').textContent = user.username;
-                    document.getElementById('user-tag').textContent = `#${user.discriminator}`;
-                    document.getElementById('user-avatar').src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128` || 'https://cdn.discordapp.com/embed/avatars/0.png';
-                } catch (error) {
-                    showErrorMessage(langDict[currentLanguage]['error-check'] + 'Invalid token.');
-                    logout();
+
+                if (joinRes.ok) {
+                    const data = await joinRes.json();
+                    const serverName = data.guild?.name || '不明なサーバー';
+                    resultDiv.classList.add('success');
+                    resultDiv.innerHTML = `<i class="fas fa-check-circle"></i> 成功！「${serverName}」に参加しました！`;
+                } else {
+                    const err = await joinRes.json().catch(() => ({}));
+                    let msg = err.message || '不明なエラー';
+                    if (joinRes.status === 404) msg = '招待リンクが無効または期限切れです';
+                    if (joinRes.status === 403) msg = '参加権限がありません（BAN済みなど）';
+                    if (joinRes.status === 429) msg = 'レートリミット（しばらく待ってください）';
+
+                    resultDiv.classList.add('error');
+                    resultDiv.innerHTML = `<i class="fas fa-times-circle"></i> 失敗: ${msg}`;
                 }
+            } catch (e) {
+                resultDiv.classList.add('error');
+                resultDiv.innerHTML = `<i class="fas fa-times-circle"></i> エラー: ${e.message}`;
             }
-            
-            // ログアウト（元のものを再利用）
-            function logout() {
-                userToken = null;
+        };
+
+        document.getElementById('clear-btn').onclick = () => {
+            if (confirm('保存されたトークンを削除しますか？')) {
                 localStorage.removeItem('discord_token');
-                document.getElementById('token-container').classList.remove('hidden');
-                document.getElementById('user-info').classList.add('hidden');
-                document.getElementById('check-container').classList.add('hidden');
-                resultsContainer.classList.add('hidden');
-                tokenInput.value = '';
+                document.getElementById('token-input').value = '';
+                document.getElementById('user-card').classList.add('hidden');
+                alert('トークンを削除しました');
             }
-            
-            // アカウント存在確認関数
-            async function checkAccountExistence(userId) {
-                if (!userId.match(/^\d{17,19}$/)) {
-                    showErrorMessage(langDict[currentLanguage]['error-check'] + (currentLanguage === 'ja' ? '無効なユーザーIDです。' : 'Invalid user ID.'));
-                    return;
-                }
-                
-                try {
-                    const response = await fetch(`${API_ENDPOINT}/users/${userId}`, {
-                        headers: { 'Authorization': userToken }
-                    });
-                    
-                    const resultItem = document.createElement('li');
-                    
-                    if (response.ok) {
-                        const user = await response.json();
-                        resultItem.className = 'success';
-                        resultItem.innerHTML = `<i class="fas fa-check-circle"></i> ${langDict[currentLanguage]['account-exists']}@${user.username}#${user.discriminator}`;
-                    } else if (response.status === 404) {
-                        resultItem.className = 'error';
-                        resultItem.innerHTML = `<i class="fas fa-times-circle"></i> ${langDict[currentLanguage]['account-not-exists']}ID: ${userId}`;
-                    } else {
-                        throw new Error(`Status: ${response.status}`);
-                    }
-                    
-                    resultsList.appendChild(resultItem);
-                    resultsContainer.classList.remove('hidden');
-                } catch (error) {
-                    showErrorMessage(langDict[currentLanguage]['error-check'] + error.message);
-                }
-            }
-            
-            // エラーメッセージ表示（元のものを再利用）
-            function showErrorMessage(message) {
-                resultsContainer.classList.remove('hidden');
-                const errorItem = document.createElement('li');
-                errorItem.className = 'error';
-                errorItem.innerHTML = `<i class="fas fa-times-circle"></i> ${message}`;
-                resultsList.appendChild(errorItem);
-            }
-            
-            // イベントリスナー
-            tokenSubmit.addEventListener('click', () => {
-                const token = tokenInput.value.trim();
-                if (token) setToken(token);
-            });
-            
-            logoutButton.addEventListener('click', logout);
-            
-            checkButton.addEventListener('click', () => {
-                const userId = userIdInput.value.trim();
-                if (userId) checkAccountExistence(userId);
-            });
-            
-            userIdInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    const userId = userIdInput.value.trim();
-                    if (userId) checkAccountExistence(userId);
-                }
-            });
-            
-            langJaBtn.addEventListener('click', () => setLanguage('ja'));
-            langEnBtn.addEventListener('click', () => setLanguage('en'));
-            
-            themeDarkBtn.addEventListener('click', () => setTheme('dark'));
-            themeLightBtn.addEventListener('click', () => setTheme('light'));
-            
-            // 初期化（ローカルストレージからトークン読み込み）
-            const savedToken = localStorage.getItem('discord_token');
-            if (savedToken) setToken(savedToken);
-            
-            const savedLang = localStorage.getItem('discord_language') || 'ja';
-            setLanguage(savedLang);
-            
-            const savedTheme = localStorage.getItem('discord_theme') || 'dark';
-            setTheme(savedTheme);
-        });
+        };
+
+        // 自動入力
+        const saved = localStorage.getItem('discord_token');
+        if (saved) {
+            document.getElementById('token-input').value = saved;
+        }
     </script>
 </body>
 </html>
