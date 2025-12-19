@@ -3,39 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord 多機能ツール 最終完全版</title>
+    <title>Discord 絵文字専用ツール（詳細ログ版）</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body { background:#202225; color:#dcddde; font-family:'Whitney',sans-serif; padding:20px; margin:0; }
         .container { max-width:900px; margin:0 auto; }
         header { text-align:center; padding:20px; border-bottom:1px solid #36393f; }
-        h1, h2, h3 { color:white; }
+        h1, h2 { color:white; }
         .card { background:#2f3136; border-radius:8px; padding:20px; margin:20px 0; }
-        .section { background:#36393f; border-radius:8px; padding:15px; margin-bottom:20px; }
-        .section-title { font-size:1.2em; font-weight:bold; margin-bottom:10px; color:#5865F2; }
-        input, select { width:100%; padding:12px; background:#202225; border:none; color:white; border-radius:4px; margin-bottom:10px; }
+        input, select { width:100%; padding:12px; background:#202225; border:none; color:white; border-radius:4px; margin-bottom:15px; }
         button { padding:12px 20px; background:#5865F2; color:white; border:none; cursor:pointer; border-radius:4px; width:100%; font-size:1.1em; margin-top:10px; }
         button:hover { background:#4752C4; }
         button.danger { background:#ed4245; }
         button.danger:hover { background:#c03537; }
         .result { padding:15px; border-radius:8px; margin-top:20px; max-height:500px; overflow-y:auto; background:#1e1f22; white-space:pre-line; font-size:0.9em; }
+        .emoji-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(80px, 1fr)); gap:15px; margin-top:20px; }
+        .emoji-item { text-align:center; }
+        .emoji-img { width:64px; height:64px; border-radius:8px; }
+        .emoji-name { font-size:0.9em; color:#b9bbbe; word-break:break-all; margin-top:5px; }
         .hidden { display:none; }
-        .toggle-label { display:flex; align-items:center; margin:15px 0; font-weight:bold; }
+        .toggle-label { display:flex; align-items:center; margin:20px 0; font-weight:bold; }
         .toggle-switch { position:relative; display:inline-block; width:60px; height:34px; margin-left:auto; }
         .toggle-switch input { opacity:0; width:0; height:0; }
         .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#ccc; transition:.4s; border-radius:34px; }
         .slider:before { position:absolute; content:""; height:26px; width:26px; left:4px; bottom:4px; background:white; transition:.4s; border-radius:50%; }
         input:checked + .slider { background:#5865F2; }
         input:checked + .slider:before { transform:translateX(26px); }
-        .warning { color:#ed4245; font-weight:bold; font-size:1em; margin-top:10px; line-height:1.5; }
-        .preview { background:#1e1f22; padding:15px; border-radius:8px; margin-top:10px; font-size:0.9em; }
+        .warning { color:#faa81a; font-size:0.9em; margin-top:5px; }
+        .log-success { color:#3ba55d; }
+        .log-error { color:#ed4245; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><i class="fab fa-discord"></i> Discord 多機能ツール 最終完全版</h1>
-            <p>すべてのモードが完璧に動作・対象サーバー明確</p>
+            <h1><i class="fab fa-discord"></i> Discord 絵文字専用ツール</h1>
+            <p>作成・削除ログを詳細に表示</p>
         </header>
 
         <div id="token-card" class="card">
@@ -45,44 +48,27 @@
         </div>
 
         <div id="main-card" class="card hidden">
-            <h2>モード選択</h2>
-            <select id="mode-select">
-                <option value="clone">サーバー完全クローン</option>
-                <option value="emoji">絵文字のみ複製</option>
-                <option value="role">ロールのみコピー</option>
-                <option value="channel">チャンネルのみコピー</option>
-                <option value="appearance">サーバー見た目変更のみ</option>
-                <option value="purge">サーバー情報すべて駆除</option>
-            </select>
+            <h2>コピー元サーバーIDを入力</h2>
+            <input type="text" id="source-id" placeholder="絵文字を取得するサーバーID">
+            <button id="load-btn">絵文字取得</button>
 
-            <div class="section" id="source-section">
-                <div class="section-title">コピー元サーバーID</div>
-                <input type="text" id="source-id" placeholder="コピー元のサーバーID">
-                <button id="load-btn">情報取得</button>
-                <div id="preview" class="preview hidden"></div>
+            <h2 style="margin-top:30px;">コピー先サーバー選択</h2>
+            <select id="target-server"></select>
+
+            <div class="toggle-label">
+                <span>既存絵文字を削除してからコピー</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="reset-emoji">
+                    <span class="slider"></span>
+                </label>
+                <div class="warning">⚠️ コピー先の全絵文字が削除されます</div>
             </div>
 
-            <div class="section">
-                <div class="section-title" id="target-title">対象サーバー</div>
-                <select id="target-select"></select>
-                <input type="text" id="target-id" placeholder="対象サーバーIDを入力（駆除モード時）" class="hidden">
-            </div>
+            <button id="copy-btn">絵文字をコピー実行</button>
 
-            <div class="section">
-                <div class="toggle-label">
-                    <span>実行前にリセット（対象データ削除）</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="reset-mode">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="warning" id="purge-warning" style="display:none;">
-                    ⚠️ 駆除モードではサーバーのすべての情報が削除されます！取り消せません！
-                </div>
-            </div>
-
-            <div class="section">
-                <button id="execute-btn">実行</button>
+            <div id="emoji-list" class="hidden">
+                <h3>取得した絵文字（<span id="emoji-count">0</span>個）</h3>
+                <div class="emoji-grid" id="emojis-display"></div>
             </div>
 
             <div id="result" class="result hidden"></div>
@@ -92,7 +78,7 @@
             <div style="display:flex; align-items:center; justify-content:space-between;">
                 <img id="avatar" src="" width="64" height="64" style="border-radius:50%;">
                 <h3 id="username">接続済み</h3>
-                <button id="logout-btn" class="danger">ログアウト＆データ削除</button>
+                <button id="logout-btn" class="danger">ログアウト</button>
             </div>
         </div>
     </div>
@@ -101,7 +87,7 @@
         const API = 'https://discord.com/api/v9';
         let token = null;
         let myGuilds = [];
-        let source = { guild: null, roles: [], channels: [], emojis: [] };
+        let sourceEmojis = [];
 
         document.getElementById('connect-btn').onclick = async () => {
             token = document.getElementById('token-input').value.trim();
@@ -116,7 +102,7 @@
 
                 myGuilds = await (await fetch(`${API}/users/@me/guilds`, { headers: { 'Authorization': token } })).json();
 
-                const select = document.getElementById('target-select');
+                const select = document.getElementById('target-server');
                 select.innerHTML = '';
                 myGuilds.forEach(g => {
                     const opt = document.createElement('option');
@@ -133,131 +119,102 @@
             }
         };
 
-        document.getElementById('mode-select').onchange = (e) => {
-            const mode = e.target.value;
-            document.getElementById('source-section').classList.toggle('hidden', mode === 'purge');
-            document.getElementById('target-select').classList.toggle('hidden', mode === 'purge');
-            document.getElementById('target-id').classList.toggle('hidden', mode !== 'purge');
-            document.getElementById('target-title').textContent = mode === 'purge' ? '駆除対象サーバーIDを入力' : '対象サーバー選択';
-            document.getElementById('purge-warning').style.display = mode === 'purge' ? 'block' : 'none';
-        };
-
         document.getElementById('load-btn').onclick = async () => {
             const sourceId = document.getElementById('source-id').value.trim();
-            if (!sourceId) return alert('コピー元IDを入力してください');
+            if (!sourceId) return alert('コピー元サーバーIDを入力してください');
 
             try {
-                source.guild = await (await fetch(`${API}/guilds/${sourceId}`, { headers: { 'Authorization': token } })).json();
-                source.roles = await (await fetch(`${API}/guilds/${sourceId}/roles`, { headers: { 'Authorization': token } })).json();
-                source.channels = await (await fetch(`${API}/guilds/${sourceId}/channels`, { headers: { 'Authorization': token } })).json();
-                source.emojis = await (await fetch(`${API}/guilds/${sourceId}/emojis`, { headers: { 'Authorization': token } })).json();
+                sourceEmojis = await (await fetch(`${API}/guilds/${sourceId}/emojis`, { headers: { 'Authorization': token } })).json();
 
-                const preview = document.getElementById('preview');
-                preview.classList.remove('hidden');
-                preview.innerHTML = `
-                    <strong>${source.guild.name}</strong><br>
-                    ロール: ${source.roles.length}個<br>
-                    チャンネル: ${source.channels.length}個<br>
-                    絵文字: ${source.emojis.length}個
-                `;
+                const display = document.getElementById('emojis-display');
+                display.innerHTML = '';
+                sourceEmojis.forEach(emoji => {
+                    const div = document.createElement('div');
+                    div.className = 'emoji-item';
+                    const img = document.createElement('img');
+                    img.src = `https://cdn.discordapp.com/emojis/${emoji.id}.png?size=96`;
+                    img.className = 'emoji-img';
+                    img.alt = emoji.name;
+                    const name = document.createElement('div');
+                    name.className = 'emoji-name';
+                    name.textContent = emoji.name;
+                    div.appendChild(img);
+                    div.appendChild(name);
+                    display.appendChild(div);
+                });
 
-                alert('情報取得完了！');
+                document.getElementById('emoji-count').textContent = sourceEmojis.length;
+                document.getElementById('emoji-list').classList.remove('hidden');
+                alert(`${sourceEmojis.length}個の絵文字を取得しました！`);
             } catch (e) {
                 alert('取得失敗: ' + e.message);
             }
         };
 
-        document.getElementById('execute-btn').onclick = async () => {
-            const mode = document.getElementById('mode-select').value;
+        document.getElementById('copy-btn').onclick = async () => {
+            if (sourceEmojis.length === 0) return alert('先に絵文字を取得してください');
+            const targetId = document.getElementById('target-server').value;
+            if (!targetId) return alert('コピー先を選択してください');
 
-            let targetId;
-            if (mode === 'purge') {
-                targetId = document.getElementById('target-id').value.trim();
-            } else {
-                targetId = document.getElementById('target-select').value;
-            }
-            if (!targetId) return alert('対象サーバーIDを入力または選択してください');
-
-            if (mode !== 'purge' && !source.guild) return alert('先にコピー元情報を取得してください');
-
-            if (!confirm('本当に実行しますか？この操作は取り消せません！')) return;
+            const reset = document.getElementById('reset-emoji').checked;
+            if (reset && !confirm('コピー先の既存絵文字をすべて削除しますか？')) return;
 
             const result = document.getElementById('result');
             result.classList.remove('hidden');
-            result.innerHTML = '実行中...\n';
+            result.innerHTML = '<strong>実行開始...</strong><br>';
 
-            const reset = document.getElementById('reset-mode').checked;
+            let deletedCount = 0;
+            let addedCount = 0;
+            let failedCount = 0;
 
-            if (reset && mode !== 'purge') {
-                // リセット処理（モード別）
-                // 絵文字削除
-                if (mode === 'emoji' || mode === 'clone') {
-                    const currentEmojis = await (await fetch(`${API}/guilds/${targetId}/emojis`, { headers: { 'Authorization': token } })).json();
-                    for (const e of currentEmojis) {
+            if (reset) {
+                result.innerHTML += '<strong>既存絵文字削除中...</strong><br>';
+                const current = await (await fetch(`${API}/guilds/${targetId}/emojis`, { headers: { 'Authorization': token } })).json();
+                for (const e of current) {
+                    try {
                         await fetch(`${API}/guilds/${targetId}/emojis/${e.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                        result.innerHTML += `絵文字削除: ${e.name}\n`;
+                        result.innerHTML += `<span class="log-success">✓ 削除成功: ${e.name}</span><br>`;
+                        deletedCount++;
+                    } catch (err) {
+                        result.innerHTML += `<span class="log-error">✗ 削除失敗: ${e.name}</span><br>`;
                     }
                 }
-                // チャンネル削除
-                if (mode === 'channel' || mode === 'clone') {
-                    const currentChannels = await (await fetch(`${API}/guilds/${targetId}/channels`, { headers: { 'Authorization': token } })).json();
-                    for (const ch of currentChannels) {
-                        await fetch(`${API}/channels/${ch.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                        result.innerHTML += `チャンネル削除: ${ch.name}\n`;
+                result.innerHTML += `<strong>削除完了: ${deletedCount}個</strong><br><br>`;
+            }
+
+            result.innerHTML += '<strong>絵文字追加中...</strong><br>';
+            for (const emoji of sourceEmojis) {
+                try {
+                    const data = await fetch(`https://cdn.discordapp.com/emojis/${emoji.id}.png`).then(r => r.arrayBuffer());
+                    const base64 = btoa(String.fromCharCode(...new Uint8Array(data)));
+                    const res = await fetch(`${API}/guilds/${targetId}/emojis`, {
+                        method: 'POST',
+                        headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: emoji.name, image: `data:image/png;base64,${base64}` })
+                    });
+                    if (res.ok) {
+                        result.innerHTML += `<span class="log-success">✓ 追加成功: ${emoji.name}</span><br>`;
+                        addedCount++;
+                    } else {
+                        const err = await res.json();
+                        result.innerHTML += `<span class="log-error">✗ 追加失敗: ${emoji.name} (${err.message || '不明'})</span><br>`;
+                        failedCount++;
                     }
-                }
-                // ロール削除
-                if (mode === 'role' || mode === 'clone') {
-                    const currentRoles = await (await fetch(`${API}/guilds/${targetId}/roles`, { headers: { 'Authorization': token } })).json();
-                    for (const r of currentRoles) {
-                        if (r.id !== targetId) {
-                            await fetch(`${API}/guilds/${targetId}/roles/${r.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                            result.innerHTML += `ロール削除: ${r.name}\n`;
-                        }
-                    }
+                } catch (err) {
+                    result.innerHTML += `<span class="log-error">✗ エラー: ${emoji.name}</span><br>`;
+                    failedCount++;
                 }
             }
 
-            if (mode === 'purge') {
-                // 完全駆除モード
-                const emojis = await (await fetch(`${API}/guilds/${targetId}/emojis`, { headers: { 'Authorization': token } })).json();
-                for (const e of emojis) {
-                    await fetch(`${API}/guilds/${targetId}/emojis/${e.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                    result.innerHTML += `絵文字削除: ${e.name}\n`;
-                }
-
-                const channels = await (await fetch(`${API}/guilds/${targetId}/channels`, { headers: { 'Authorization': token } })).json();
-                for (const ch of channels) {
-                    await fetch(`${API}/channels/${ch.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                    result.innerHTML += `チャンネル削除: ${ch.name}\n`;
-                }
-
-                const roles = await (await fetch(`${API}/guilds/${targetId}/roles`, { headers: { 'Authorization': token } })).json();
-                for (const r of roles) {
-                    if (r.id !== targetId) {
-                        await fetch(`${API}/guilds/${targetId}/roles/${r.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                        result.innerHTML += `ロール削除: ${r.name}\n`;
-                    }
-                }
-
-                await fetch(`${API}/guilds/${targetId}`, {
-                    method: 'PATCH',
-                    headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: 'New Server', icon: null, banner: null })
-                });
-                result.innerHTML += 'サーバー名・アイコン・バナー削除\n';
-
-                result.innerHTML += '<strong>サーバー情報すべて駆除完了！完全に空のサーバーになりました</strong>';
-            } else {
-                // 他のモードの実行ロジックは前の完全版からコピーしてください（スペースの関係で省略）
-                result.innerHTML += '他のモードの詳細ロジックは前の完全クローンコードを参照してください。\n';
-                result.innerHTML += '<strong>モード実行完了！</strong>';
-            }
+            result.innerHTML += `<br><strong>完了！</strong><br>`;
+            result.innerHTML += `追加成功: ${addedCount}個<br>`;
+            if (failedCount > 0) result.innerHTML += `追加失敗: ${failedCount}個<br>`;
+            if (reset) result.innerHTML += `削除: ${deletedCount}個<br>`;
         };
 
         document.getElementById('logout-btn').onclick = () => {
-            if (confirm('ログアウト＆データ削除しますか？')) {
-                localStorage.clear();
+            if (confirm('ログアウトしますか？')) {
+                localStorage.removeItem('discord_token');
                 location.reload();
             }
         };
