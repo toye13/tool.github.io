@@ -3,58 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord サーバー参加ツール</title>
+    <title>Discord チャンネル構成コピー作成ツール</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body { background:#202225; color:#dcddde; font-family:'Whitney',sans-serif; padding:20px; margin:0; }
-        .container { max-width:800px; margin:0 auto; }
+        .container { max-width:900px; margin:0 auto; }
         header { text-align:center; padding:20px; border-bottom:1px solid #36393f; }
-        h1 { color:white; }
+        h1, h2 { color:white; }
         .card { background:#2f3136; border-radius:8px; padding:20px; margin:20px 0; }
-        .input-group { display:flex; flex-direction:column; gap:15px; margin-bottom:20px; }
-        input { padding:12px; background:#202225; border:none; color:white; border-radius:4px; }
+        input, select { width:100%; padding:12px; background:#202225; border:none; color:white; border-radius:4px; margin-bottom:15px; }
         button { padding:12px 20px; background:#5865F2; color:white; border:none; cursor:pointer; border-radius:4px; }
         button:hover { background:#4752C4; }
         button.danger { background:#ed4245; }
         button.danger:hover { background:#c03537; }
-        .result { padding:15px; border-radius:8px; margin-top:20px; font-weight:bold; }
-        .success { background:rgba(59,165,93,0.2); border-left:4px solid #3ba55d; }
-        .error { background:rgba(237,66,69,0.2); border-left:4px solid #ed4245; }
+        .result { padding:15px; border-radius:8px; margin-top:20px; max-height:300px; overflow-y:auto; background:#1e1f22; }
+        .success { border-left:4px solid #3ba55d; }
+        .error { border-left:4px solid #ed4245; }
         .hidden { display:none; }
-        .disclaimer { font-size:0.9em; color:#72767d; margin-top:15px; line-height:1.5; }
+        .channel-list { margin-top:10px; font-size:0.9em; color:#b9bbbe; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><i class="fab fa-discord"></i> Discord サーバー参加ツール</h1>
-            <p>ユーザー・トークンで招待リンクからサーバーに参加</p>
+            <h1><i class="fab fa-discord"></i> Discord チャンネル構成コピー作成ツール</h1>
+            <p>別サーバーのチャンネルを自分のサーバーにコピー作成</p>
         </header>
 
-        <div class="card">
-            <h2>トークンと招待リンクを入力</h2>
-            <div class="input-group">
-                <input type="password" id="token-input" placeholder="Discordユーザー・トークン（保存されます）">
-                <input type="text" id="invite-input" placeholder="招待リンクまたはコード（例: abc123 または https://discord.gg/abc123）">
-            </div>
-            <button id="join-btn">サーバーに参加</button>
-            <button id="clear-btn" class="danger" style="margin-left:10px;">トークン削除</button>
-
-            <div class="disclaimer">
-                ⚠️ ユーザー・トークンでのサーバー参加は規約グレーゾーンです。過度な使用はアカウント凍結のリスクがあります。<br>
-                ⚠️ スパム・迷惑行為には絶対に使用しないでください。<br>
-                ⚠️ 自己責任でお使いください。
-            </div>
+        <div id="token-card" class="card">
+            <h2>トークンを入力</h2>
+            <input type="password" id="token-input" placeholder="Discordユーザー・トークン">
+            <button id="connect-btn">接続</button>
         </div>
 
-        <div id="result" class="result hidden"></div>
+        <div id="main-card" class="card hidden">
+            <h2>コピー元サーバーIDを入力</h2>
+            <input type="text" id="source-id" placeholder="コピー元のサーバーID（あなたが所属しているサーバー）">
+            <button id="load-btn">チャンネル一覧取得</button>
 
-        <div class="card hidden" id="user-card">
-            <div style="display:flex; align-items:center; gap:15px;">
+            <h2 style="margin-top:30px;">コピー先（自分のサーバー）</h2>
+            <select id="target-server"></select>
+            <button id="copy-btn">チャンネル構成をコピー作成</button>
+
+            <div id="channel-list" class="channel-list hidden">
+                <strong>取得したチャンネル一覧:</strong><br>
+                <div id="channels-display"></div>
+            </div>
+
+            <div id="result" class="result hidden"></div>
+        </div>
+
+        <div id="user-card" class="card hidden">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
                 <img id="avatar" src="" width="64" height="64" style="border-radius:50%;">
-                <div>
-                    <h3 id="username">接続済み</h3>
-                </div>
+                <h3 id="username">接続済み</h3>
+                <button id="logout-btn" class="danger">ログアウト</button>
             </div>
         </div>
     </div>
@@ -62,84 +65,133 @@
     <script>
         const API = 'https://discord.com/api/v9';
         let token = null;
+        let myGuilds = [];
+        let sourceChannels = [];
 
-        // 招待コード抽出
-        function extractCode(link) {
-            const match = link.match(/discord(?:app)?\.com\/invite\/([a-zA-Z0-9-]+)/) || link.match(/^([a-zA-Z0-9-]+)$/);
-            return match ? match[1] : null;
-        }
-
-        document.getElementById('join-btn').onclick = async () => {
+        document.getElementById('connect-btn').onclick = async () => {
             token = document.getElementById('token-input').value.trim();
-            const rawInvite = document.getElementById('invite-input').value.trim();
-
             if (!token) return alert('トークンを入力してください');
-            if (!rawInvite) return alert('招待リンクまたはコードを入力してください');
-
-            const code = extractCode(rawInvite);
-            if (!code) return alert('有効な招待リンクまたはコードを入力してください');
-
-            localStorage.setItem('discord_token', token); // 保存
-
-            const resultDiv = document.getElementById('result');
-            resultDiv.classList.remove('hidden', 'success', 'error');
+            localStorage.setItem('discord_token', token);
 
             try {
-                // まず自分の情報取得（トークン確認）
                 const meRes = await fetch(`${API}/users/@me`, { headers: { 'Authorization': token } });
-                if (!meRes.ok) throw new Error('トークンが無効です');
-
+                if (!meRes.ok) throw new Error('無効なトークン');
                 const me = await meRes.json();
-                document.getElementById('username').textContent = me.global_name || me.username;
-                document.getElementById('avatar').src = me.avatar 
-                    ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=128`
-                    : 'https://cdn.discordapp.com/embed/avatars/0.png';
-                document.getElementById('user-card').classList.remove('hidden');
 
-                // サーバー参加
-                const joinRes = await fetch(`${API}/invites/${code}`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': token,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({})
+                document.getElementById('username').textContent = me.global_name || me.username;
+                document.getElementById('avatar').src = me.avatar ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=128` : 'https://cdn.discordapp.com/embed/avatars/0.png';
+
+                // 自分のサーバー一覧取得
+                const guildsRes = await fetch(`${API}/users/@me/guilds`, { headers: { 'Authorization': token } });
+                myGuilds = await guildsRes.json();
+
+                const select = document.getElementById('target-server');
+                select.innerHTML = '';
+                myGuilds.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g.id;
+                    opt.textContent = g.name;
+                    select.appendChild(opt);
                 });
 
-                if (joinRes.ok) {
-                    const data = await joinRes.json();
-                    const serverName = data.guild?.name || '不明なサーバー';
-                    resultDiv.classList.add('success');
-                    resultDiv.innerHTML = `<i class="fas fa-check-circle"></i> 成功！「${serverName}」に参加しました！`;
-                } else {
-                    const err = await joinRes.json().catch(() => ({}));
-                    let msg = err.message || '不明なエラー';
-                    if (joinRes.status === 404) msg = '招待リンクが無効または期限切れです';
-                    if (joinRes.status === 403) msg = '参加権限がありません（BAN済みなど）';
-                    if (joinRes.status === 429) msg = 'レートリミット（しばらく待ってください）';
-
-                    resultDiv.classList.add('error');
-                    resultDiv.innerHTML = `<i class="fas fa-times-circle"></i> 失敗: ${msg}`;
-                }
+                document.getElementById('token-card').classList.add('hidden');
+                document.getElementById('main-card').classList.remove('hidden');
+                document.getElementById('user-card').classList.remove('hidden');
             } catch (e) {
-                resultDiv.classList.add('error');
-                resultDiv.innerHTML = `<i class="fas fa-times-circle"></i> エラー: ${e.message}`;
+                alert('接続失敗: ' + e.message);
             }
         };
 
-        document.getElementById('clear-btn').onclick = () => {
-            if (confirm('保存されたトークンを削除しますか？')) {
+        document.getElementById('load-btn').onclick = async () => {
+            const sourceId = document.getElementById('source-id').value.trim();
+            if (!sourceId) return alert('コピー元サーバーIDを入力してください');
+
+            try {
+                const channelsRes = await fetch(`${API}/guilds/${sourceId}/channels`, { headers: { 'Authorization': token } });
+                if (!channelsRes.ok) throw new Error('サーバーにアクセスできません（所属していない可能性）');
+                sourceChannels = await channelsRes.json();
+
+                const display = document.getElementById('channels-display');
+                display.innerHTML = '';
+                sourceChannels.forEach(ch => {
+                    const type = {0: 'テキスト', 2: 'ボイス', 4: 'カテゴリ'}[ch.type] || '不明';
+                    display.innerHTML += `${type}: ${ch.name} ${ch.parent_id ? '(カテゴリ内)' : ''}<br>`;
+                });
+
+                document.getElementById('channel-list').classList.remove('hidden');
+                alert(`チャンネル ${sourceChannels.length} 個を取得しました！`);
+            } catch (e) {
+                alert('取得失敗: ' + e.message);
+            }
+        };
+
+        document.getElementById('copy-btn').onclick = async () => {
+            if (sourceChannels.length === 0) return alert('先にコピー元チャンネルを取得してください');
+            const targetId = document.getElementById('target-server').value;
+            if (!targetId) return alert('コピー先サーバーを選択してください');
+
+            const result = document.getElementById('result');
+            result.classList.remove('hidden', 'success', 'error');
+            result.innerHTML = '作成中...<br>';
+
+            const categories = {}; // カテゴリIDマップ (旧 → 新)
+
+            for (const ch of sourceChannels) {
+                try {
+                    let payload = {
+                        name: ch.name,
+                        type: ch.type,
+                        permission_overwrites: ch.permission_overwrites || []
+                    };
+
+                    // カテゴリの場合
+                    if (ch.type === 4) {
+                        const res = await fetch(`${API}/guilds/${targetId}/channels`, {
+                            method: 'POST',
+                            headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const newCh = await res.json();
+                        categories[ch.id] = newCh.id;
+                        result.innerHTML += `カテゴリ作成: ${ch.name}<br>`;
+                    } else {
+                        // 親カテゴリがあればマップ
+                        if (ch.parent_id && categories[ch.parent_id]) {
+                            payload.parent_id = categories[ch.parent_id];
+                        }
+                        const res = await fetch(`${API}/guilds/${targetId}/channels`, {
+                            method: 'POST',
+                            headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (res.ok) {
+                            const newCh = await res.json();
+                            result.innerHTML += `${ch.type === 0 ? 'テキスト' : 'ボイス'}作成: ${ch.name}<br>`;
+                        } else {
+                            result.innerHTML += `失敗: ${ch.name} (${(await res.json()).message || res.status})<br>`;
+                        }
+                    }
+                } catch (e) {
+                    result.innerHTML += `エラー: ${ch.name} (${e.message})<br>`;
+                }
+            }
+
+            result.classList.add('success');
+            result.innerHTML += '<strong>コピー完了！サーバーを確認してください</strong>';
+        };
+
+        document.getElementById('logout-btn').onclick = () => {
+            if (confirm('ログアウトしますか？')) {
                 localStorage.removeItem('discord_token');
-                document.getElementById('token-input').value = '';
-                document.getElementById('user-card').classList.add('hidden');
-                alert('トークンを削除しました');
+                location.reload();
             }
         };
 
-        // 自動入力
+        // 自動接続
         const saved = localStorage.getItem('discord_token');
         if (saved) {
             document.getElementById('token-input').value = saved;
+            document.getElementById('connect-btn').click();
         }
     </script>
 </body>
