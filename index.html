@@ -3,64 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord サーバー完全クローン（位置完全一致）</title>
+    <title>Discord 多機能ツール（モード切替対応）</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body { background:#202225; color:#dcddde; font-family:'Whitney',sans-serif; padding:20px; margin:0; }
         .container { max-width:900px; margin:0 auto; }
         header { text-align:center; padding:20px; border-bottom:1px solid #36393f; }
-        h1, h2 { color:white; }
+        h1, h2, h3 { color:white; }
         .card { background:#2f3136; border-radius:8px; padding:20px; margin:20px 0; }
-        input, select { width:100%; padding:12px; background:#202225; border:none; color:white; border-radius:4px; margin-bottom:15px; }
+        .section { background:#36393f; border-radius:8px; padding:15px; margin-bottom:20px; }
+        .section-title { font-size:1.2em; font-weight:bold; margin-bottom:10px; color:#5865F2; }
+        input, select { width:100%; padding:12px; background:#202225; border:none; color:white; border-radius:4px; margin-bottom:10px; }
         button { padding:12px 20px; background:#5865F2; color:white; border:none; cursor:pointer; border-radius:4px; width:100%; font-size:1.1em; margin-top:10px; }
         button:hover { background:#4752C4; }
         button.danger { background:#ed4245; }
         button.danger:hover { background:#c03537; }
         .result { padding:15px; border-radius:8px; margin-top:20px; max-height:500px; overflow-y:auto; background:#1e1f22; white-space:pre-line; font-size:0.9em; }
         .hidden { display:none; }
-        .toggle-label { display:flex; align-items:center; margin:20px 0; font-weight:bold; }
+        .toggle-label { display:flex; align-items:center; margin:15px 0; font-weight:bold; }
         .toggle-switch { position:relative; display:inline-block; width:60px; height:34px; margin-left:auto; }
         .toggle-switch input { opacity:0; width:0; height:0; }
         .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#ccc; transition:.4s; border-radius:34px; }
         .slider:before { position:absolute; content:""; height:26px; width:26px; left:4px; bottom:4px; background:white; transition:.4s; border-radius:50%; }
         input:checked + .slider { background:#5865F2; }
         input:checked + .slider:before { transform:translateX(26px); }
-        .warning { color:#faa81a; font-size:0.9em; margin-top:10px; line-height:1.5; }
-        .note { font-size:0.9em; color:#b9bbbe; margin-top:10px; }
+        .warning { color:#faa81a; font-size:0.9em; margin-top:5px; line-height:1.5; }
+        .emoji-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(80px, 1fr)); gap:10px; margin-top:20px; }
+        .emoji-item { text-align:center; font-size:60px; }
+        .emoji-name { font-size:0.8em; color:#b9bbbe; word-break:break-all; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><i class="fab fa-discord"></i> Discord サーバー完璧クローン</h1>
-            <p>位置・順序・権限・構造すべて完全一致</p>
+            <h1><i class="fab fa-discord"></i> Discord 多機能ツール</h1>
+            <p>モード切替で絵文字・ロール・チャンネル・完全クローン</p>
         </header>
 
         <div id="token-card" class="card">
             <h2>トークンを入力</h2>
             <input type="password" id="token-input" placeholder="Discordユーザー・トークン">
             <button id="connect-btn">接続</button>
-            <div class="note">トークンはブラウザにのみ保存されます</div>
         </div>
 
         <div id="main-card" class="card hidden">
-            <h2>コピー元サーバーIDを入力</h2>
-            <input type="text" id="source-id" placeholder="コピー元のサーバーID">
-            <button id="load-btn">サーバー情報取得</button>
+            <h2>モード選択</h2>
+            <select id="mode-select">
+                <option value="emoji">絵文字のみコピー</option>
+                <option value="role">ロールのみコピー</option>
+                <option value="channel">チャンネル構成コピー</option>
+                <option value="full">サーバー完全クローン</option>
+            </select>
 
-            <h2 style="margin-top:30px;">コピー先サーバー選択</h2>
-            <select id="target-server"></select>
-
-            <div class="toggle-label">
-                <span>コピー前に完全リセット（強く推奨）</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="reset-mode" checked>
-                    <span class="slider"></span>
-                </label>
-                <div class="warning">⚠️ ロール・チャンネル・絵文字がすべて削除されます</div>
+            <div class="section">
+                <div class="section-title">コピー元サーバーID</div>
+                <input type="text" id="source-id" placeholder="コピー元のサーバーID">
+                <button id="load-btn">情報取得</button>
+                <div id="preview" class="hidden" style="margin-top:10px; padding:15px; background:#1e1f22; border-radius:8px;"></div>
             </div>
 
-            <button id="clone-btn">完璧クローン作成実行</button>
+            <div class="section">
+                <div class="section-title">コピー先サーバー</div>
+                <select id="target-server"></select>
+            </div>
+
+            <div class="section" id="channel-options">
+                <div class="toggle-label">
+                    <span>すべて同じ位置に作成</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="same-position">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="toggle-label">
+                    <span>すべて同じカテゴリにまとめる</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="same-category">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <input type="text" id="category-name" placeholder="カテゴリ名" class="hidden">
+            </div>
+
+            <div class="section">
+                <div class="toggle-label">
+                    <span>コピー前にリセット（対象データ削除）</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="reset-mode">
+                        <span class="slider"></span>
+                    </label>
+                    <div class="warning">モードに応じて絵文字・ロール・チャンネルが削除されます</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <button id="execute-btn">実行</button>
+            </div>
+
+            <div id="emoji-list" class="hidden">
+                <h3>取得した絵文字</h3>
+                <div class="emoji-grid" id="emojis-display"></div>
+            </div>
 
             <div id="result" class="result hidden"></div>
         </div>
@@ -69,7 +113,7 @@
             <div style="display:flex; align-items:center; justify-content:space-between;">
                 <img id="avatar" src="" width="64" height="64" style="border-radius:50%;">
                 <h3 id="username">接続済み</h3>
-                <button id="logout-btn" class="danger">ログアウト＆データ削除</button>
+                <button id="logout-btn" class="danger">ログアウト</button>
             </div>
         </div>
     </div>
@@ -110,162 +154,200 @@
             }
         };
 
+        // モード切り替えでオプション表示制御
+        document.getElementById('mode-select').onchange = (e) => {
+            const mode = e.target.value;
+            document.getElementById('channel-options').classList.toggle('hidden', mode === 'emoji' || mode === 'role');
+            document.getElementById('emoji-list').classList.add('hidden');
+        };
+
+        document.getElementById('same-category').onchange = (e) => {
+            document.getElementById('category-name').classList.toggle('hidden', !e.target.checked);
+        };
+
         document.getElementById('load-btn').onclick = async () => {
             const sourceId = document.getElementById('source-id').value.trim();
             if (!sourceId) return alert('コピー元IDを入力してください');
 
             try {
+                const mode = document.getElementById('mode-select').value;
                 source.guild = await (await fetch(`${API}/guilds/${sourceId}`, { headers: { 'Authorization': token } })).json();
-                source.roles = await (await fetch(`${API}/guilds/${sourceId}/roles`, { headers: { 'Authorization': token } })).json();
-                source.channels = await (await fetch(`${API}/guilds/${sourceId}/channels`, { headers: { 'Authorization': token } })).json();
-                source.emojis = await (await fetch(`${API}/guilds/${sourceId}/emojis`, { headers: { 'Authorization': token } })).json();
 
-                alert(`取得完了！\nサーバー: ${source.guild.name}\nロール: ${source.roles.length}個\nチャンネル: ${source.channels.length}個\n絵文字: ${source.emojis.length}個`);
+                if (mode !== 'emoji') {
+                    source.roles = await (await fetch(`${API}/guilds/${sourceId}/roles`, { headers: { 'Authorization': token } })).json();
+                    source.channels = await (await fetch(`${API}/guilds/${sourceId}/channels`, { headers: { 'Authorization': token } })).json();
+                }
+                if (mode !== 'role' && mode !== 'channel') {
+                    source.emojis = await (await fetch(`${API}/guilds/${sourceId}/emojis`, { headers: { 'Authorization': token } })).json();
+                }
+
+                const preview = document.getElementById('preview');
+                preview.classList.remove('hidden');
+                preview.innerHTML = `<strong>${source.guild.name}</strong><br>`;
+                if (source.roles.length) preview.innerHTML += `ロール: ${source.roles.length}個<br>`;
+                if (source.channels.length) preview.innerHTML += `チャンネル: ${source.channels.length}個<br>`;
+                if (source.emojis.length) preview.innerHTML += `絵文字: ${source.emojis.length}個<br>`;
+
+                // 絵文字プレビュー
+                if (source.emojis.length && mode === 'emoji') {
+                    const display = document.getElementById('emojis-display');
+                    display.innerHTML = '';
+                    source.emojis.forEach(emoji => {
+                        const div = document.createElement('div');
+                        div.className = 'emoji-item';
+                        const img = document.createElement('img');
+                        img.src = `https://cdn.discordapp.com/emojis/${emoji.id}.png?size=96`;
+                        img.style.width = '64px';
+                        img.style.height = '64px';
+                        const name = document.createElement('div');
+                        name.className = 'emoji-name';
+                        name.textContent = emoji.name;
+                        div.appendChild(img);
+                        div.appendChild(name);
+                        display.appendChild(div);
+                    });
+                    document.getElementById('emoji-list').classList.remove('hidden');
+                }
+
+                alert('情報取得完了！');
             } catch (e) {
                 alert('取得失敗: ' + e.message);
             }
         };
 
-        document.getElementById('clone-btn').onclick = async () => {
+        document.getElementById('execute-btn').onclick = async () => {
             if (!source.guild) return alert('先に情報を取得してください');
             const targetId = document.getElementById('target-server').value;
             if (!targetId) return alert('コピー先を選択してください');
 
+            const mode = document.getElementById('mode-select').value;
             const reset = document.getElementById('reset-mode').checked;
-            if (reset && !confirm('本当に完全リセットしてクローンしますか？\nすべてのデータが削除されます！')) return;
+            const samePosition = document.getElementById('same-position').checked;
+            const sameCategory = document.getElementById('same-category').checked;
+            const categoryName = document.getElementById('category-name').value.trim() || 'Main Category';
+
+            if (reset && !confirm('本当にリセットして実行しますか？')) return;
 
             const result = document.getElementById('result');
             result.classList.remove('hidden');
             result.innerHTML = '実行中...\n';
 
+            // リセット処理（モード別）
             if (reset) {
-                // 絵文字削除
-                const emojis = await (await fetch(`${API}/guilds/${targetId}/emojis`, { headers: { 'Authorization': token } })).json();
-                for (const e of emojis) {
-                    await fetch(`${API}/guilds/${targetId}/emojis/${e.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                    result.innerHTML += `絵文字削除: ${e.name}\n`;
+                if (mode !== 'role') {
+                    // チャンネル削除
+                    const currentChannels = await (await fetch(`${API}/guilds/${targetId}/channels`, { headers: { 'Authorization': token } })).json();
+                    for (const ch of currentChannels) {
+                        await fetch(`${API}/channels/${ch.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
+                        result.innerHTML += `チャンネル削除: ${ch.name}\n`;
+                    }
                 }
-
-                // チャンネル削除
-                const channels = await (await fetch(`${API}/guilds/${targetId}/channels`, { headers: { 'Authorization': token } })).json();
-                for (const ch of channels) {
-                    await fetch(`${API}/channels/${ch.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                    result.innerHTML += `チャンネル削除: ${ch.name}\n`;
+                if (mode === 'emoji' || mode === 'full') {
+                    // 絵文字削除
+                    const currentEmojis = await (await fetch(`${API}/guilds/${targetId}/emojis`, { headers: { 'Authorization': token } })).json();
+                    for (const e of currentEmojis) {
+                        await fetch(`${API}/guilds/${targetId}/emojis/${e.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
+                        result.innerHTML += `絵文字削除: ${e.name}\n`;
+                    }
                 }
-
-                // ロール削除 (@everyone以外)
-                const roles = await (await fetch(`${API}/guilds/${targetId}/roles`, { headers: { 'Authorization': token } })).json();
-                for (const r of roles) {
-                    if (r.id !== targetId) {
-                        await fetch(`${API}/guilds/${targetId}/roles/${r.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                        result.innerHTML += `ロール削除: ${r.name}\n`;
+                if (mode === 'role' || mode === 'full') {
+                    // ロール削除
+                    const currentRoles = await (await fetch(`${API}/guilds/${targetId}/roles`, { headers: { 'Authorization': token } })).json();
+                    for (const r of currentRoles) {
+                        if (r.id !== targetId) {
+                            await fetch(`${API}/guilds/${targetId}/roles/${r.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
+                            result.innerHTML += `ロール削除: ${r.name}\n`;
+                        }
                     }
                 }
             }
 
-            // ロールコピー（position完全一致）
-            const roleMap = {};
-            // positionの低い順（下から上）に作成（Discordの仕様に合わせる）
-            const sortedRoles = [...source.roles].sort((a, b) => a.position - b.position);
-            for (const role of sortedRoles) {
-                const payload = {
-                    name: role.name,
-                    color: role.color,
-                    hoist: role.hoist,
-                    mentionable: role.mentionable,
-                    permissions: role.permissions
-                };
-                const res = await fetch(`${API}/guilds/${targetId}/roles`, {
-                    method: 'POST',
-                    headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const newRole = await res.json();
-                roleMap[role.id] = newRole.id;
-                result.innerHTML += `ロール作成: ${role.name} (position: ${role.position})\n`;
-            }
-
-            // @everyone権限
-            const everyone = source.roles.find(r => r.id === source.guild.id);
-            if (everyone) {
-                await fetch(`${API}/guilds/${targetId}/roles/${targetId}`, {
-                    method: 'PATCH',
-                    headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ permissions: everyone.permissions })
-                });
-                result.innerHTML += '@everyone権限設定\n';
-            }
-
-            // チャンネルコピー（position完全一致）
-            const categoryMap = {};
-            // positionの低い順に作成（下から上へ）
-            const sortedChannels = [...source.channels].sort((a, b) => a.position - b.position);
-            for (const ch of sortedChannels) {
-                let payload = {
-                    name: ch.name,
-                    type: ch.type,
-                    position: ch.position, // 位置完全一致
-                    permission_overwrites: ch.permission_overwrites.map(o => ({
-                        id: roleMap[o.id] || o.id,
-                        type: o.type,
-                        allow: o.allow,
-                        deny: o.deny
-                    }))
-                };
-
-                if (ch.parent_id && categoryMap[ch.parent_id]) {
-                    payload.parent_id = categoryMap[ch.parent_id];
-                }
-
-                const res = await fetch(`${API}/guilds/${targetId}/channels`, {
-                    method: 'POST',
-                    headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (res.ok) {
-                    const newCh = await res.json();
-                    if (ch.type === 4) categoryMap[ch.id] = newCh.id;
-                    result.innerHTML += `${ch.type === 0 ? 'テキスト' : ch.type === 2 ? 'ボイス' : 'カテゴリ'}作成: ${ch.name} (position: ${ch.position})\n`;
-                } else {
-                    result.innerHTML += `失敗: ${ch.name}\n`;
+            // モード別実行
+            if (mode === 'emoji' || mode === 'full') {
+                for (const emoji of source.emojis) {
+                    const data = await fetch(`https://cdn.discordapp.com/emojis/${emoji.id}.png`).then(r => r.arrayBuffer());
+                    const base64 = btoa(String.fromCharCode(...new Uint8Array(data)));
+                    await fetch(`${API}/guilds/${targetId}/emojis`, {
+                        method: 'POST',
+                        headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: emoji.name, image: `data:image/png;base64,${base64}` })
+                    });
+                    result.innerHTML += `絵文字追加: ${emoji.name}\n`;
                 }
             }
 
-            // 絵文字コピー
-            for (const emoji of source.emojis) {
-                const data = await fetch(`https://cdn.discordapp.com/emojis/${emoji.id}.png`).then(r => r.arrayBuffer());
-                const base64 = btoa(String.fromCharCode(...new Uint8Array(data)));
-                await fetch(`${API}/guilds/${targetId}/emojis`, {
-                    method: 'POST',
-                    headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: emoji.name, image: `data:image/png;base64,${base64}` })
-                });
-                result.innerHTML += `絵文字追加: ${emoji.name}\n`;
+            if (mode === 'role' || mode === 'full') {
+                const roleMap = {};
+                const sortedRoles = [...source.roles].sort((a, b) => a.position - b.position);
+                for (const role of sortedRoles) {
+                    const payload = {
+                        name: role.name,
+                        color: role.color,
+                        hoist: role.hoist,
+                        mentionable: role.mentionable,
+                        permissions: role.permissions
+                    };
+                    const res = await fetch(`${API}/guilds/${targetId}/roles`, {
+                        method: 'POST',
+                        headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const newRole = await res.json();
+                    roleMap[role.id] = newRole.id;
+                    result.innerHTML += `ロール作成: ${role.name}\n`;
+                }
             }
 
-            // サーバーアイコン・バナー
-            const guildPayload = { name: source.guild.name };
-            if (source.guild.icon) {
-                const iconData = await fetch(`https://cdn.discordapp.com/icons/${source.guild.id}/${source.guild.icon}.png`).then(r => r.arrayBuffer());
-                guildPayload.icon = `data:image/png;base64,${btoa(String.fromCharCode(...new Uint8Array(iconData)))}`;
-            }
-            if (source.guild.banner) {
-                const bannerData = await fetch(`https://cdn.discordapp.com/banners/${source.guild.id}/${source.guild.banner}.png?size=480`).then(r => r.arrayBuffer());
-                guildPayload.banner = `data:image/png;base64,${btoa(String.fromCharCode(...new Uint8Array(bannerData)))}`;
-            }
-            await fetch(`${API}/guilds/${targetId}`, {
-                method: 'PATCH',
-                headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                body: JSON.stringify(guildPayload)
-            });
-            result.innerHTML += 'サーバー名・アイコン・バナー更新\n';
+            if (mode === 'channel' || mode === 'full') {
+                let mainCategoryId = null;
+                if (sameCategory) {
+                    const catRes = await fetch(`${API}/guilds/${targetId}/channels`, {
+                        method: 'POST',
+                        headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: categoryName, type: 4 })
+                    });
+                    if (catRes.ok) mainCategoryId = (await catRes.json()).id;
+                }
 
-            result.innerHTML += '\n<strong>完璧クローン作成完了！\n位置・順序・権限が完全に一致しました</strong>';
+                const sortedChannels = [...source.channels].sort((a, b) => a.position - b.position);
+                const categoryMap = {};
+                for (const ch of sortedChannels) {
+                    if (ch.type === 4 && (sameCategory || samePosition)) continue;
+
+                    let payload = {
+                        name: ch.name,
+                        type: ch.type,
+                        position: ch.position,
+                        permission_overwrites: ch.permission_overwrites || []
+                    };
+
+                    if (sameCategory && mainCategoryId) {
+                        payload.parent_id = mainCategoryId;
+                    } else if (ch.parent_id && categoryMap[ch.parent_id]) {
+                        payload.parent_id = categoryMap[ch.parent_id];
+                    } else if (samePosition) {
+                        delete payload.parent_id;
+                    }
+
+                    const res = await fetch(`${API}/guilds/${targetId}/channels`, {
+                        method: 'POST',
+                        headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (res.ok) {
+                        const newCh = await res.json();
+                        if (ch.type === 4) categoryMap[ch.id] = newCh.id;
+                        result.innerHTML += `チャンネル作成: ${ch.name}\n`;
+                    }
+                }
+            }
+
+            result.innerHTML += '<strong>実行完了！</strong>';
         };
 
         document.getElementById('logout-btn').onclick = () => {
-            if (confirm('ログアウト＆データ削除しますか？')) {
-                localStorage.clear();
+            if (confirm('ログアウトしますか？')) {
+                localStorage.removeItem('discord_token');
                 location.reload();
             }
         };
