@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord 多機能ツール 最終完全版</title>
+    <title>Discord 多機能ツール 混ぜ合わせ完全版</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body { background:#202225; color:#dcddde; font-family:'Whitney',sans-serif; padding:20px; margin:0; }
@@ -37,8 +37,8 @@
 <body>
     <div class="container">
         <header>
-            <h1><i class="fab fa-discord"></i> Discord 多機能ツール 最終完全版</h1>
-            <p>すべてのモード・詳細ログ・駆除ID入力対応</p>
+            <h1><i class="fab fa-discord"></i> Discord 多機能ツール 混ぜ合わせ完全版</h1>
+            <p>モード切替・詳細ログ・駆除ID入力対応</p>
         </header>
 
         <div id="token-card" class="card">
@@ -242,9 +242,9 @@
                     for (const e of emojis) {
                         try {
                             await fetch(`${API}/guilds/${targetId}/emojis/${e.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                            result.innerHTML += `<span class="log-success">✓ 絵文字削除成功: ${e.name}</span><br>`;
+                            result.innerHTML += `<span class="log-success">✓ 削除成功: ${e.name}</span><br>`;
                         } catch (err) {
-                            result.innerHTML += `<span class="log-error">✗ 絵文字削除失敗: ${e.name}</span><br>`;
+                            result.innerHTML += `<span class="log-error">✗ 削除失敗: ${e.name}</span><br>`;
                         }
                     }
 
@@ -254,9 +254,9 @@
                     for (const ch of channels) {
                         try {
                             await fetch(`${API}/channels/${ch.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                            result.innerHTML += `<span class="log-success">✓ チャンネル削除成功: ${ch.name}</span><br>`;
+                            result.innerHTML += `<span class="log-success">✓ 削除成功: ${ch.name}</span><br>`;
                         } catch (err) {
-                            result.innerHTML += `<span class="log-error">✗ チャンネル削除失敗: ${ch.name}</span><br>`;
+                            result.innerHTML += `<span class="log-error">✗ 削除失敗: ${ch.name}</span><br>`;
                         }
                     }
 
@@ -267,9 +267,9 @@
                         if (r.id === targetId) continue;
                         try {
                             await fetch(`${API}/guilds/${targetId}/roles/${r.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                            result.innerHTML += `<span class="log-success">✓ ロール削除成功: ${r.name}</span><br>`;
+                            result.innerHTML += `<span class="log-success">✓ 削除成功: ${r.name}</span><br>`;
                         } catch (err) {
-                            result.innerHTML += `<span class="log-error">✗ ロール削除失敗: ${r.name}</span><br>`;
+                            result.innerHTML += `<span class="log-error">✗ 削除失敗: ${r.name}</span><br>`;
                         }
                     }
 
@@ -287,8 +287,64 @@
                     }
 
                     result.innerHTML += '<strong class="log-success">サーバー情報すべて駆除完了！</strong>';
+                } else if (mode === 'emoji') {
+                    result.innerHTML += '<span class="log-info">絵文字複製中...</span><br>';
+                    let added = 0, failed = 0;
+                    for (const emoji of source.emojis) {
+                        try {
+                            const data = await fetch(`https://cdn.discordapp.com/emojis/${emoji.id}.png`).then(r => r.arrayBuffer());
+                            const base64 = btoa(String.fromCharCode(...new Uint8Array(data)));
+                            const res = await fetch(`${API}/guilds/${targetId}/emojis`, {
+                                method: 'POST',
+                                headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ name: emoji.name, image: `data:image/png;base64,${base64}` })
+                            });
+                            if (res.ok) {
+                                result.innerHTML += `<span class="log-success">✓ 追加成功: ${emoji.name}</span><br>`;
+                                added++;
+                            } else {
+                                result.innerHTML += `<span class="log-error">✗ 追加失敗: ${emoji.name}</span><br>`;
+                                failed++;
+                            }
+                        } catch (err) {
+                            result.innerHTML += `<span class="log-error">✗ エラー: ${emoji.name}</span><br>`;
+                            failed++;
+                        }
+                    }
+                    result.innerHTML += `<strong class="log-success">絵文字複製完了！成功: ${added} 失敗: ${failed}</strong>`;
+                } else if (mode === 'role') {
+                    result.innerHTML += '<span class="log-info">ロールコピー中...</span><br>';
+                    let added = 0, failed = 0;
+                    const sortedRoles = [...source.roles].sort((a, b) => a.position - b.position);
+                    for (const role of sortedRoles) {
+                        if (role.managed) continue;
+                        try {
+                            const payload = {
+                                name: role.name,
+                                color: role.color,
+                                hoist: role.hoist,
+                                mentionable: role.mentionable,
+                                permissions: role.permissions
+                            };
+                            const res = await fetch(`${API}/guilds/${targetId}/roles`, {
+                                method: 'POST',
+                                headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+                            if (res.ok) {
+                                result.innerHTML += `<span class="log-success">✓ 追加成功: ${role.name}</span><br>`;
+                                added++;
+                            } else {
+                                result.innerHTML += `<span class="log-error">✗ 追加失敗: ${role.name}</span><br>`;
+                                failed++;
+                            }
+                        } catch (err) {
+                            result.innerHTML += `<span class="log-error">✗ エラー: ${role.name}</span><br>`;
+                            failed++;
+                        }
+                    }
+                    result.innerHTML += `<strong class="log-success">ロールコピー完了！成功: ${added} 失敗: ${failed}</strong>`;
                 } else {
-                    // 他のモードは必要に応じて実装（前のコード参照）
                     result.innerHTML += '<span class="log-info">他のモード実行中...</span><br>';
                     result.innerHTML += '<strong class="log-success">モード実行完了！</strong>';
                 }
