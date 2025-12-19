@@ -3,41 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord 多機能ツール 最終完全版</title>
+    <title>Discord サーバー情報すべて駆除ツール（詳細ログ版）</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body { background:#202225; color:#dcddde; font-family:'Whitney',sans-serif; padding:20px; margin:0; }
         .container { max-width:900px; margin:0 auto; }
         header { text-align:center; padding:20px; border-bottom:1px solid #36393f; }
-        h1, h2, h3 { color:white; }
+        h1, h2 { color:white; }
         .card { background:#2f3136; border-radius:8px; padding:20px; margin:20px 0; }
-        .section { background:#36393f; border-radius:8px; padding:15px; margin-bottom:20px; }
-        .section-title { font-size:1.2em; font-weight:bold; margin-bottom:10px; color:#5865F2; }
-        input, select { width:100%; padding:12px; background:#202225; border:none; color:white; border-radius:4px; margin-bottom:10px; }
-        button { padding:12px 20px; background:#5865F2; color:white; border:none; cursor:pointer; border-radius:4px; width:100%; font-size:1.1em; margin-top:10px; }
-        button:hover { background:#4752C4; }
-        button.danger { background:#ed4245; }
-        button.danger:hover { background:#c03537; }
-        .result { padding:15px; border-radius:8px; margin-top:20px; max-height:500px; overflow-y:auto; background:#1e1f22; white-space:pre-line; font-size:0.9em; }
+        input { width:100%; padding:12px; background:#202225; border:none; color:white; border-radius:4px; margin-bottom:15px; }
+        button { padding:12px 20px; background:#ed4245; color:white; border:none; cursor:pointer; border-radius:4px; width:100%; font-size:1.1em; margin-top:10px; }
+        button:hover { background:#c03537; }
+        .result { padding:15px; border-radius:8px; margin-top:20px; max-height:600px; overflow-y:auto; background:#1e1f22; white-space:pre-line; font-size:0.9em; }
         .hidden { display:none; }
-        .toggle-label { display:flex; align-items:center; margin:15px 0; font-weight:bold; }
-        .toggle-switch { position:relative; display:inline-block; width:60px; height:34px; margin-left:auto; }
-        .toggle-switch input { opacity:0; width:0; height:0; }
-        .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#ccc; transition:.4s; border-radius:34px; }
-        .slider:before { position:absolute; content:""; height:26px; width:26px; left:4px; bottom:4px; background:white; transition:.4s; border-radius:50%; }
-        input:checked + .slider { background:#5865F2; }
-        input:checked + .slider:before { transform:translateX(26px); }
-        .warning { color:#faa81a; font-size:0.9em; margin-top:5px; line-height:1.5; }
+        .warning { color:#ed4245; font-weight:bold; font-size:1.1em; margin-top:20px; line-height:1.6; text-align:center; }
         .log-success { color:#3ba55d; }
         .log-error { color:#ed4245; }
-        .preview { background:#1e1f22; padding:15px; border-radius:8px; margin-top:10px; font-size:0.9em; }
+        .log-info { color:#5865F2; font-weight:bold; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><i class="fab fa-discord"></i> Discord 多機能ツール 最終完全版</h1>
-            <p>すべてのモードが動作・詳細ログ表示</p>
+            <h1><i class="fab fa-discord"></i> Discord サーバー情報すべて駆除ツール</h1>
+            <p>詳細ログで成功・失敗を確認可能</p>
         </header>
 
         <div id="token-card" class="card">
@@ -47,44 +36,15 @@
         </div>
 
         <div id="main-card" class="card hidden">
-            <h2>モード選択</h2>
-            <select id="mode-select">
-                <option value="clone">サーバー完全クローン</option>
-                <option value="emoji">絵文字のみ複製</option>
-                <option value="role">ロールのみコピー</option>
-                <option value="channel">チャンネルのみコピー</option>
-                <option value="appearance">サーバー見た目変更のみ</option>
-                <option value="purge">サーバー情報すべて駆除</option>
-            </select>
+            <h2>駆除対象サーバーIDを入力</h2>
+            <input type="text" id="target-id" placeholder="完全に駆除するサーバーID">
+            <button id="purge-btn">サーバー情報すべて駆除実行</button>
 
-            <div class="section" id="source-section">
-                <div class="section-title">コピー元サーバーID</div>
-                <input type="text" id="source-id" placeholder="コピー元のサーバーID">
-                <button id="load-btn">情報取得</button>
-                <div id="preview" class="preview hidden"></div>
-            </div>
-
-            <div class="section">
-                <div class="section-title" id="target-title">対象サーバー</div>
-                <select id="target-select"></select>
-                <input type="text" id="target-id" placeholder="対象サーバーIDを入力（駆除モード時）" class="hidden">
-            </div>
-
-            <div class="section">
-                <div class="toggle-label">
-                    <span>実行前にリセット（対象データ削除）</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="reset-mode">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="warning" id="purge-warning" style="display:none;">
-                    ⚠️ 駆除モードではサーバーのすべての情報が削除されます！
-                </div>
-            </div>
-
-            <div class="section">
-                <button id="execute-btn">実行</button>
+            <div class="warning">
+                ⚠️ この操作は取り消せません！<br>
+                ロール・チャンネル・絵文字・アイコン・バナーがすべて削除されます<br>
+                サーバー名は「New Server」に変更されます<br>
+                本当に実行する場合は確認ダイアログでOKしてください
             </div>
 
             <div id="result" class="result hidden"></div>
@@ -94,7 +54,7 @@
             <div style="display:flex; align-items:center; justify-content:space-between;">
                 <img id="avatar" src="" width="64" height="64" style="border-radius:50%;">
                 <h3 id="username">接続済み</h3>
-                <button id="logout-btn" class="danger">ログアウト＆データ削除</button>
+                <button id="logout-btn" class="danger">ログアウト</button>
             </div>
         </div>
     </div>
@@ -102,8 +62,6 @@
     <script>
         const API = 'https://discord.com/api/v9';
         let token = null;
-        let myGuilds = [];
-        let source = { guild: null, roles: [], channels: [], emojis: [] };
 
         document.getElementById('connect-btn').onclick = async () => {
             token = document.getElementById('token-input').value.trim();
@@ -116,17 +74,6 @@
                 document.getElementById('username').textContent = me.global_name || me.username;
                 document.getElementById('avatar').src = me.avatar ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=128` : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
-                myGuilds = await (await fetch(`${API}/users/@me/guilds`, { headers: { 'Authorization': token } })).json();
-
-                const select = document.getElementById('target-select');
-                select.innerHTML = '';
-                myGuilds.forEach(g => {
-                    const opt = document.createElement('option');
-                    opt.value = g.id;
-                    opt.textContent = g.name;
-                    select.appendChild(opt);
-                });
-
                 document.getElementById('token-card').classList.add('hidden');
                 document.getElementById('main-card').classList.remove('hidden');
                 document.getElementById('user-card').classList.remove('hidden');
@@ -135,225 +82,87 @@
             }
         };
 
-        document.getElementById('mode-select').onchange = (e) => {
-            const mode = e.target.value;
-            document.getElementById('source-section').classList.toggle('hidden', mode === 'purge');
-            document.getElementById('target-select').classList.toggle('hidden', mode === 'purge');
-            document.getElementById('target-id').classList.toggle('hidden', mode !== 'purge');
-            document.getElementById('target-title').textContent = mode === 'purge' ? '駆除対象サーバーIDを入力' : '対象サーバー選択';
-            document.getElementById('purge-warning').style.display = mode === 'purge' ? 'block' : 'none';
-        };
+        document.getElementById('purge-btn').onclick = async () => {
+            const targetId = document.getElementById('target-id').value.trim();
+            if (!targetId) return alert('サーバーIDを入力してください');
 
-        document.getElementById('load-btn').onclick = async () => {
-            const sourceId = document.getElementById('source-id').value.trim();
-            if (!sourceId) return alert('コピー元IDを入力してください');
-
-            try {
-                source.guild = await (await fetch(`${API}/guilds/${sourceId}`, { headers: { 'Authorization': token } })).json();
-                source.roles = await (await fetch(`${API}/guilds/${sourceId}/roles`, { headers: { 'Authorization': token } })).json();
-                source.channels = await (await fetch(`${API}/guilds/${sourceId}/channels`, { headers: { 'Authorization': token } })).json();
-                source.emojis = await (await fetch(`${API}/guilds/${sourceId}/emojis`, { headers: { 'Authorization': token } })).json();
-
-                const preview = document.getElementById('preview');
-                preview.classList.remove('hidden');
-                preview.innerHTML = `
-                    <strong>${source.guild.name}</strong><br>
-                    ロール: ${source.roles.length}個<br>
-                    チャンネル: ${source.channels.length}個<br>
-                    絵文字: ${source.emojis.length}個
-                `;
-
-                alert('情報取得完了！');
-            } catch (e) {
-                alert('取得失敗: ' + e.message);
-            }
-        };
-
-        document.getElementById('execute-btn').onclick = async () => {
-            const mode = document.getElementById('mode-select').value;
-
-            let targetId;
-            if (mode === 'purge') {
-                targetId = document.getElementById('target-id').value.trim();
-            } else {
-                targetId = document.getElementById('target-select').value;
-            }
-            if (!targetId) return alert('対象サーバーIDを入力または選択してください');
-
-            if (mode !== 'purge' && !source.guild) return alert('先にコピー元情報を取得してください');
-
-            if (!confirm('本当に実行しますか？この操作は取り消せません！')) return;
+            if (!confirm('本当にこのサーバーの情報をすべて駆除しますか？\nこの操作は取り消せません！')) return;
 
             const result = document.getElementById('result');
             result.classList.remove('hidden');
-            result.innerHTML = '<strong>実行開始...</strong><br>';
+            result.innerHTML = '<span class="log-info">駆除実行開始...</span><br>';
 
-            const reset = document.getElementById('reset-mode').checked;
+            let deletedEmojis = 0;
+            let deletedChannels = 0;
+            let deletedRoles = 0;
 
-            // リセット処理
-            if (reset && mode !== 'purge') {
-                result.innerHTML += '<strong>リセット中...</strong><br>';
-                if (mode === 'emoji' || mode === 'clone') {
-                    const currentEmojis = await (await fetch(`${API}/guilds/${targetId}/emojis`, { headers: { 'Authorization': token } })).json();
-                    for (const e of currentEmojis) {
-                        try {
-                            await fetch(`${API}/guilds/${targetId}/emojis/${e.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                            result.innerHTML += `<span class="log-success">✓ 絵文字削除: ${e.name}</span><br>`;
-                        } catch (err) {
-                            result.innerHTML += `<span class="log-error">✗ 絵文字削除失敗: ${e.name}</span><br>`;
-                        }
-                    }
-                }
-                if (mode === 'role' || mode === 'clone') {
-                    const currentRoles = await (await fetch(`${API}/guilds/${targetId}/roles`, { headers: { 'Authorization': token } })).json();
-                    for (const r of currentRoles) {
-                        if (r.id !== targetId) {
-                            try {
-                                await fetch(`${API}/guilds/${targetId}/roles/${r.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                                result.innerHTML += `<span class="log-success">✓ ロール削除: ${r.name}</span><br>`;
-                            } catch (err) {
-                                result.innerHTML += `<span class="log-error">✗ ロール削除失敗: ${r.name}</span><br>`;
-                            }
-                        }
-                    }
-                }
-                if (mode === 'channel' || mode === 'clone') {
-                    const currentChannels = await (await fetch(`${API}/guilds/${targetId}/channels`, { headers: { 'Authorization': token } })).json();
-                    for (const ch of currentChannels) {
-                        try {
-                            await fetch(`${API}/channels/${ch.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                            result.innerHTML += `<span class="log-success">✓ チャンネル削除: ${ch.name}</span><br>`;
-                        } catch (err) {
-                            result.innerHTML += `<span class="log-error">✗ チャンネル削除失敗: ${ch.name}</span><br>`;
-                        }
-                    }
-                }
-            }
-
-            // モード別実行
-            if (mode === 'emoji' || mode === 'clone') {
-                result.innerHTML += '<strong>絵文字コピー中...</strong><br>';
-                let added = 0, failed = 0;
-                for (const emoji of source.emojis) {
+            try {
+                // 絵文字削除
+                result.innerHTML += '<span class="log-info">絵文字削除中...</span><br>';
+                const emojis = await (await fetch(`${API}/guilds/${targetId}/emojis`, { headers: { 'Authorization': token } })).json();
+                for (const e of emojis) {
                     try {
-                        const data = await fetch(`https://cdn.discordapp.com/emojis/${emoji.id}.png`).then(r => r.arrayBuffer());
-                        const base64 = btoa(String.fromCharCode(...new Uint8Array(data)));
-                        const res = await fetch(`${API}/guilds/${targetId}/emojis`, {
-                            method: 'POST',
-                            headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ name: emoji.name, image: `data:image/png;base64,${base64}` })
-                        });
-                        if (res.ok) {
-                            result.innerHTML += `<span class="log-success">✓ 追加成功: ${emoji.name}</span><br>`;
-                            added++;
-                        } else {
-                            const err = await res.json();
-                            result.innerHTML += `<span class="log-error">✗ 追加失敗: ${emoji.name} (${err.message || '不明'})</span><br>`;
-                            failed++;
-                        }
+                        await fetch(`${API}/guilds/${targetId}/emojis/${e.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
+                        result.innerHTML += `<span class="log-success">✓ 削除成功: ${e.name}</span><br>`;
+                        deletedEmojis++;
                     } catch (err) {
-                        result.innerHTML += `<span class="log-error">✗ エラー: ${emoji.name}</span><br>`;
-                        failed++;
+                        result.innerHTML += `<span class="log-error">✗ 削除失敗: ${e.name}</span><br>`;
                     }
                 }
-                result.innerHTML += `<strong>絵文字コピー完了: 成功 ${added}個 / 失敗 ${failed}個</strong><br>`;
-            }
+                result.innerHTML += `<span class="log-success">絵文字削除完了: ${deletedEmojis}個</span><br><br>`;
 
-            if (mode === 'role' || mode === 'clone') {
-                result.innerHTML += '<strong>ロールコピー中...</strong><br>';
-                let added = 0, failed = 0;
-                const sortedRoles = [...source.roles].sort((a, b) => a.position - b.position);
-                for (const role of sortedRoles) {
-                    if (role.managed) continue;
+                // チャンネル削除
+                result.innerHTML += '<span class="log-info">チャンネル削除中...</span><br>';
+                const channels = await (await fetch(`${API}/guilds/${targetId}/channels`, { headers: { 'Authorization': token } })).json();
+                for (const ch of channels) {
                     try {
-                        const payload = {
-                            name: role.name,
-                            color: role.color,
-                            hoist: role.hoist,
-                            mentionable: role.mentionable,
-                            permissions: role.permissions
-                        };
-                        const res = await fetch(`${API}/guilds/${targetId}/roles`, {
-                            method: 'POST',
-                            headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        if (res.ok) {
-                            result.innerHTML += `<span class="log-success">✓ 追加成功: ${role.name}</span><br>`;
-                            added++;
-                        } else {
-                            const err = await res.json();
-                            result.innerHTML += `<span class="log-error">✗ 追加失敗: ${role.name} (${err.message || '不明'})</span><br>`;
-                            failed++;
-                        }
+                        await fetch(`${API}/channels/${ch.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
+                        result.innerHTML += `<span class="log-success">✓ 削除成功: ${ch.name}</span><br>`;
+                        deletedChannels++;
                     } catch (err) {
-                        result.innerHTML += `<span class="log-error">✗ エラー: ${role.name}</span><br>`;
-                        failed++;
+                        result.innerHTML += `<span class="log-error">✗ 削除失敗: ${ch.name}</span><br>`;
                     }
                 }
-                result.innerHTML += `<strong>ロールコピー完了: 成功 ${added}個 / 失敗 ${failed}個</strong><br>`;
-            }
+                result.innerHTML += `<span class="log-success">チャンネル削除完了: ${deletedChannels}個</span><br><br>`;
 
-            if (mode === 'channel' || mode === 'clone') {
-                result.innerHTML += '<strong>チャンネルコピー中...</strong><br>';
-                let added = 0, failed = 0;
-                const sortedChannels = [...source.channels].sort((a, b) => a.position - b.position);
-                const categoryMap = {};
-                for (const ch of sortedChannels) {
-                    if (ch.type === 4) continue; // カテゴリは別処理（またはスキップ）
-                    let payload = {
-                        name: ch.name,
-                        type: ch.type,
-                        position: ch.position,
-                        permission_overwrites: ch.permission_overwrites || []
-                    };
-                    const res = await fetch(`${API}/guilds/${targetId}/channels`, {
-                        method: 'POST',
+                // ロール削除 (@everyone以外)
+                result.innerHTML += '<span class="log-info">ロール削除中...</span><br>';
+                const roles = await (await fetch(`${API}/guilds/${targetId}/roles`, { headers: { 'Authorization': token } })).json();
+                for (const r of roles) {
+                    if (r.id === targetId) continue; // @everyoneスキップ
+                    try {
+                        await fetch(`${API}/guilds/${targetId}/roles/${r.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
+                        result.innerHTML += `<span class="log-success">✓ 削除成功: ${r.name}</span><br>`;
+                        deletedRoles++;
+                    } catch (err) {
+                        result.innerHTML += `<span class="log-error">✗ 削除失敗: ${r.name}</span><br>`;
+                    }
+                }
+                result.innerHTML += `<span class="log-success">ロール削除完了: ${deletedRoles}個</span><br><br>`;
+
+                // サーバー名・アイコン・バナー削除
+                result.innerHTML += '<span class="log-info">サーバー設定リセット中...</span><br>';
+                try {
+                    await fetch(`${API}/guilds/${targetId}`, {
+                        method: 'PATCH',
                         headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify({ name: 'New Server', icon: null, banner: null })
                     });
-                    if (res.ok) {
-                        result.innerHTML += `<span class="log-success">✓ 作成成功: ${ch.name}</span><br>`;
-                        added++;
-                    } else {
-                        result.innerHTML += `<span class="log-error">✗ 作成失敗: ${ch.name}</span><br>`;
-                        failed++;
-                    }
+                    result.innerHTML += '<span class="log-success">✓ サーバー名を「New Server」に変更、アイコン・バナー削除成功</span><br>';
+                } catch (err) {
+                    result.innerHTML += '<span class="log-error">✗ サーバー設定リセット失敗</span><br>';
                 }
-                result.innerHTML += `<strong>チャンネルコピー完了: 成功 ${added}個 / 失敗 ${failed}個</strong><br>`;
-            }
 
-            if (mode === 'appearance' || mode === 'clone') {
-                result.innerHTML += '<strong>サーバー見た目変更中...</strong><br>';
-                const payload = { name: source.guild.name };
-                if (source.guild.icon) {
-                    const iconData = await fetch(`https://cdn.discordapp.com/icons/${source.guild.id}/${source.guild.icon}.png`).then(r => r.arrayBuffer());
-                    payload.icon = `data:image/png;base64,${btoa(String.fromCharCode(...new Uint8Array(iconData)))}`;
-                }
-                if (source.guild.banner) {
-                    const bannerData = await fetch(`https://cdn.discordapp.com/banners/${source.guild.id}/${source.guild.banner}.png?size=480`).then(r => r.arrayBuffer());
-                    payload.banner = `data:image/png;base64,${btoa(String.fromCharCode(...new Uint8Array(bannerData)))}`;
-                }
-                await fetch(`${API}/guilds/${targetId}`, {
-                    method: 'PATCH',
-                    headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                result.innerHTML += '<span class="log-success">✓ サーバー名・アイコン・バナー更新成功</span><br>';
+                result.innerHTML += `<br><strong class="log-success">サーバー情報すべて駆除完了！</strong><br>`;
+                result.innerHTML += `削除合計: 絵文字 ${deletedEmojis}個, チャンネル ${deletedChannels}個, ロール ${deletedRoles}個`;
+            } catch (e) {
+                result.innerHTML += `<span class="log-error">全体エラー: ${e.message}</span><br>`;
             }
-
-            if (mode === 'purge') {
-                result.innerHTML += '<strong>完全駆除実行中...</strong><br>';
-                // 完全駆除ロジック（前のコードと同じ）
-                result.innerHTML += '<strong>駆除完了！</strong>';
-            }
-
-            result.innerHTML += '<br><strong>すべての処理が完了しました！</strong>';
         };
 
         document.getElementById('logout-btn').onclick = () => {
-            if (confirm('ログアウト＆データ削除しますか？')) {
-                localStorage.clear();
+            if (confirm('ログアウトしますか？')) {
+                localStorage.removeItem('discord_token');
                 location.reload();
             }
         };
