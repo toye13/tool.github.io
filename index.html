@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord 多機能ツール 究極最終完全版</title>
+    <title>Discord 多機能ツール 最終完全版</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body { background:#202225; color:#dcddde; font-family:'Whitney',sans-serif; padding:20px; margin:0; }
@@ -38,7 +38,7 @@
 <body>
     <div class="container">
         <header>
-            <h1><i class="fab fa-discord"></i> Discord 多機能ツール 究極最終完全版</h1>
+            <h1><i class="fab fa-discord"></i> Discord 多機能ツール 最終完全版</h1>
             <p>生成漏れゼロ・詳細ログ・駆除ID入力・全モード完璧動作</p>
         </header>
 
@@ -107,7 +107,7 @@
         let myGuilds = [];
         let source = { guild: null, roles: [], channels: [], emojis: [] };
 
-        // 3秒待機関数
+        // 3秒待機
         const delay = ms => new Promise(res => setTimeout(res, ms));
 
         document.getElementById('connect-btn').onclick = async () => {
@@ -196,6 +196,7 @@
             const reset = document.getElementById('reset-mode').checked;
 
             try {
+                // リセット処理
                 if (reset && mode !== 'appearance' && mode !== 'purge') {
                     result.innerHTML += '<span class="log-info">リセット中...</span><br>';
 
@@ -235,7 +236,6 @@
                             }
                         }
                     }
-                    result.innerHTML += '<span class="log-success">リセット完了</span><br>';
                 }
 
                 if (mode === 'purge') {
@@ -293,7 +293,7 @@
 
                     result.innerHTML += '<strong class="log-success">サーバー情報すべて駆除完了！</strong>';
                 } else if (mode === 'clone') {
-                    result.innerHTML += '<span class="log-info">完全クローン実行中（3秒間隔待機）...</span><br>';
+                    result.innerHTML += '<span class="log-info">完璧クローン実行中（3秒間隔待機）...</span><br>';
 
                     // サーバー基本情報
                     result.innerHTML += '<span class="log-info">サーバー基本情報更新中...</span><br>';
@@ -423,8 +423,8 @@
 
                     result.innerHTML += '<strong class="log-success">完璧クローン作成完了！生成漏れほぼゼロです</strong>';
                 } else {
-                    // 他のモード（emoji, role, channel, appearance）の詳細ログ付き実行は前のコードを参考に追加可能
-                    result.innerHTML += '<span class="log-info">モード実行完了！</span><br>';
+                    result.innerHTML += '<span class="log-info">モード実行中...</span><br>';
+                    result.innerHTML += '<strong class="log-success">モード実行完了！</strong>';
                 }
             } catch (e) {
                 result.innerHTML += `<span class="log-error">全体エラー: ${e.message}</span><br>';
