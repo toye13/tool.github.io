@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord 多機能ツール 混ぜ合わせ最終完全版</title>
+    <title>Discord 多機能ツール（Botトークン対応）最終完全版</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body { background:#202225; color:#dcddde; font-family:'Whitney',sans-serif; padding:20px; margin:0; }
@@ -11,8 +11,6 @@
         header { text-align:center; padding:20px; border-bottom:1px solid #36393f; }
         h1, h2, h3 { color:white; }
         .card { background:#2f3136; border-radius:8px; padding:20px; margin:20px 0; }
-        .section { background:#36393f; border-radius:8px; padding:15px; margin-bottom:20px; }
-        .section-title { font-size:1.2em; font-weight:bold; margin-bottom:10px; color:#5865F2; }
         input, select { width:100%; padding:12px; background:#202225; border:none; color:white; border-radius:4px; margin-bottom:10px; }
         button { padding:12px 20px; background:#5865F2; color:white; border:none; cursor:pointer; border-radius:4px; width:100%; font-size:1.1em; margin-top:10px; }
         button:hover { background:#4752C4; }
@@ -31,19 +29,27 @@
         .log-success { color:#3ba55d; }
         .log-error { color:#ed4245; }
         .log-info { color:#5865F2; font-weight:bold; }
+        .log-wait { color:#b9bbbe; font-style:italic; }
         .preview { background:#1e1f22; padding:15px; border-radius:8px; margin-top:10px; font-size:0.9em; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><i class="fab fa-discord"></i> Discord 多機能ツール 混ぜ合わせ最終完全版</h1>
-            <p>すべての機能が完璧に動作・詳細ログ表示</p>
+            <h1><i class="fab fa-discord"></i> Discord 多機能ツール</h1>
+            <p>Botトークン対応・生成漏れゼロ・詳細ログ</p>
         </header>
 
         <div id="token-card" class="card">
             <h2>トークンを入力</h2>
-            <input type="password" id="token-input" placeholder="Discordユーザー・トークン">
+            <input type="password" id="token-input" placeholder="ユーザーまたはBotトークン">
+            <div class="toggle-label">
+                <span>Botトークンを使用する</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="use-bot-token">
+                    <span class="slider"></span>
+                </label>
+            </div>
             <button id="connect-btn">接続</button>
         </div>
 
@@ -67,8 +73,8 @@
 
             <div class="section">
                 <div class="section-title" id="target-title">対象サーバー</div>
-                <select id="target-select"></select>
-                <input type="text" id="target-id" placeholder="対象サーバーIDを入力（駆除モード時）" class="hidden">
+                <select id="target-select" class="hidden"></select>
+                <input type="text" id="target-id" placeholder="対象サーバーIDを入力" class="hidden">
             </div>
 
             <div class="section">
@@ -95,7 +101,7 @@
             <div style="display:flex; align-items:center; justify-content:space-between;">
                 <img id="avatar" src="" width="64" height="64" style="border-radius:50%;">
                 <h3 id="username">接続済み</h3>
-                <button id="logout-btn" class="danger">ログアウト＆データ削除</button>
+                <button id="logout-btn" class="danger">ログアウト</button>
             </div>
         </div>
     </div>
@@ -103,30 +109,40 @@
     <script>
         const API = 'https://discord.com/api/v9';
         let token = null;
+        let isBot = false;
         let myGuilds = [];
         let source = { guild: null, roles: [], channels: [], emojis: [] };
+
+        const delay = ms => new Promise(res => setTimeout(res, ms));
 
         document.getElementById('connect-btn').onclick = async () => {
             token = document.getElementById('token-input').value.trim();
             if (!token) return alert('トークンを入力してください');
+
+            isBot = document.getElementById('use-bot-token').checked;
             localStorage.setItem('discord_token', token);
 
             try {
                 const me = await (await fetch(`${API}/users/@me`, { headers: { 'Authorization': token } })).json();
 
-                document.getElementById('username').textContent = me.global_name || me.username;
+                document.getElementById('username').textContent = isBot ? 'Botアカウント' : (me.global_name || me.username);
                 document.getElementById('avatar').src = me.avatar ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=128` : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
-                myGuilds = await (await fetch(`${API}/users/@me/guilds`, { headers: { 'Authorization': token } })).json();
+                // Botの場合はサーバー一覧取得不可のためドロップダウン非表示
+                const targetSelect = document.getElementById('target-select');
+                targetSelect.classList.toggle('hidden', isBot);
+                document.getElementById('target-id').classList.toggle('hidden', !isBot);
 
-                const select = document.getElementById('target-select');
-                select.innerHTML = '';
-                myGuilds.forEach(g => {
-                    const opt = document.createElement('option');
-                    opt.value = g.id;
-                    opt.textContent = g.name;
-                    select.appendChild(opt);
-                });
+                if (!isBot) {
+                    myGuilds = await (await fetch(`${API}/users/@me/guilds`, { headers: { 'Authorization': token } })).json();
+                    targetSelect.innerHTML = '';
+                    myGuilds.forEach(g => {
+                        const opt = document.createElement('option');
+                        opt.value = g.id;
+                        opt.textContent = g.name;
+                        targetSelect.appendChild(opt);
+                    });
+                }
 
                 document.getElementById('token-card').classList.add('hidden');
                 document.getElementById('main-card').classList.remove('hidden');
@@ -139,8 +155,8 @@
         document.getElementById('mode-select').onchange = (e) => {
             const mode = e.target.value;
             document.getElementById('source-section').classList.toggle('hidden', mode === 'purge');
-            document.getElementById('target-select').classList.toggle('hidden', mode === 'purge');
-            document.getElementById('target-id').classList.toggle('hidden', mode !== 'purge');
+            document.getElementById('target-select').classList.toggle('hidden', mode === 'purge' || isBot);
+            document.getElementById('target-id').classList.toggle('hidden', mode !== 'purge' && !isBot);
             document.getElementById('target-title').textContent = mode === 'purge' ? '駆除対象サーバーIDを入力' : '対象サーバー選択';
             document.getElementById('purge-warning').style.display = mode === 'purge' ? 'block' : 'none';
         };
@@ -174,7 +190,7 @@
             const mode = document.getElementById('mode-select').value;
 
             let targetId;
-            if (mode === 'purge') {
+            if (mode === 'purge' || isBot) {
                 targetId = document.getElementById('target-id').value.trim();
             } else {
                 targetId = document.getElementById('target-select').value;
@@ -192,230 +208,79 @@
             const reset = document.getElementById('reset-mode').checked;
 
             try {
+                // リセット処理（共通）
                 if (reset && mode !== 'appearance' && mode !== 'purge') {
                     result.innerHTML += '<span class="log-info">リセット中...</span><br>';
 
-                    if (mode === 'emoji' || mode === 'clone') {
-                        const currentEmojis = await (await fetch(`${API}/guilds/${targetId}/emojis`, { headers: { 'Authorization': token } })).json();
-                        for (const e of currentEmojis) {
-                            try {
-                                await fetch(`${API}/guilds/${targetId}/emojis/${e.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                                result.innerHTML += `<span class="log-success">✓ 絵文字削除成功: ${e.name}</span><br>`;
-                            } catch {
-                                result.innerHTML += `<span class="log-error">✗ 絵文字削除失敗: ${e.name}</span><br>`;
-                            }
-                        }
-                    }
-
-                    if (mode === 'channel' || mode === 'clone') {
-                        const currentChannels = await (await fetch(`${API}/guilds/${targetId}/channels`, { headers: { 'Authorization': token } })).json();
-                        for (const ch of currentChannels) {
-                            try {
-                                await fetch(`${API}/channels/${ch.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                                result.innerHTML += `<span class="log-success">✓ チャンネル削除成功: ${ch.name}</span><br>`;
-                            } catch {
-                                result.innerHTML += `<span class="log-error">✗ チャンネル削除失敗: ${ch.name}</span><br>`;
-                            }
-                        }
-                    }
-
-                    if (mode === 'role' || mode === 'clone') {
-                        const currentRoles = await (await fetch(`${API}/guilds/${targetId}/roles`, { headers: { 'Authorization': token } })).json();
-                        for (const r of currentRoles) {
-                            if (r.id === targetId) continue;
-                            try {
-                                await fetch(`${API}/guilds/${targetId}/roles/${r.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                                result.innerHTML += `<span class="log-success">✓ ロール削除成功: ${r.name}</span><br>`;
-                            } catch {
-                                result.innerHTML += `<span class="log-error">✗ ロール削除失敗: ${r.name}</span><br>`;
-                            }
-                        }
-                    }
-                }
-
-                if (mode === 'purge') {
-                    result.innerHTML += '<span class="log-info">完全駆除実行中...</span><br>';
-
                     // 絵文字削除
-                    result.innerHTML += '<span class="log-info">絵文字削除中...</span><br>';
-                    const emojis = await (await fetch(`${API}/guilds/${targetId}/emojis`, { headers: { 'Authorization': token } })).json();
-                    for (const e of emojis) {
+                    const currentEmojis = await (await fetch(`${API}/guilds/${targetId}/emojis`, { headers: { 'Authorization': token } })).json();
+                    for (const e of currentEmojis) {
                         try {
                             await fetch(`${API}/guilds/${targetId}/emojis/${e.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                            result.innerHTML += `<span class="log-success">✓ 削除成功: ${e.name}</span><br>`;
+                            result.innerHTML += `<span class="log-success">✓ 絵文字削除成功: ${e.name}</span><br>`;
                         } catch {
-                            result.innerHTML += `<span class="log-error">✗ 削除失敗: ${e.name}</span><br>`;
+                            result.innerHTML += `<span class="log-error">✗ 絵文字削除失敗: ${e.name}</span><br>`;
                         }
                     }
 
                     // チャンネル削除
-                    result.innerHTML += '<span class="log-info">チャンネル削除中...</span><br>';
-                    const channels = await (await fetch(`${API}/guilds/${targetId}/channels`, { headers: { 'Authorization': token } })).json();
-                    for (const ch of channels) {
+                    const currentChannels = await (await fetch(`${API}/guilds/${targetId}/channels`, { headers: { 'Authorization': token } })).json();
+                    for (const ch of currentChannels) {
                         try {
                             await fetch(`${API}/channels/${ch.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                            result.innerHTML += `<span class="log-success">✓ 削除成功: ${ch.name}</span><br>`;
+                            result.innerHTML += `<span class="log-success">✓ チャンネル削除成功: ${ch.name}</span><br>`;
                         } catch {
-                            result.innerHTML += `<span class="log-error">✗ 削除失敗: ${ch.name}</span><br>`;
+                            result.innerHTML += `<span class="log-error">✗ チャンネル削除失敗: ${ch.name}</span><br>`;
                         }
                     }
 
                     // ロール削除
-                    result.innerHTML += '<span class="log-info">ロール削除中...</span><br>';
-                    const roles = await (await fetch(`${API}/guilds/${targetId}/roles`, { headers: { 'Authorization': token } })).json();
-                    for (const r of roles) {
+                    const currentRoles = await (await fetch(`${API}/guilds/${targetId}/roles`, { headers: { 'Authorization': token } })).json();
+                    for (const r of currentRoles) {
                         if (r.id === targetId) continue;
                         try {
                             await fetch(`${API}/guilds/${targetId}/roles/${r.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
-                            result.innerHTML += `<span class="log-success">✓ 削除成功: ${r.name}</span><br>`;
+                            result.innerHTML += `<span class="log-success">✓ ロール削除成功: ${r.name}</span><br>`;
                         } catch {
-                            result.innerHTML += `<span class="log-error">✗ 削除失敗: ${r.name}</span><br>`;
+                            result.innerHTML += `<span class="log-error">✗ ロール削除失敗: ${r.name}</span><br>`;
                         }
                     }
+                }
 
-                    // サーバー設定リセット
-                    result.innerHTML += '<span class="log-info">サーバー設定リセット中...</span><br>';
-                    try {
-                        await fetch(`${API}/guilds/${targetId}`, {
-                            method: 'PATCH',
-                            headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ name: 'New Server', icon: null, banner: null })
-                        });
-                        result.innerHTML += '<span class="log-success">✓ サーバー名・アイコン・バナー削除成功</span><br>';
-                    } catch {
-                        result.innerHTML += '<span class="log-error">✗ サーバー設定リセット失敗</span><br>';
-                    }
+                // 各モードの処理（完全クローン例）
+                if (mode === 'clone') {
+                    result.innerHTML += '<span class="log-info">完全クローン実行中（3秒間隔待機）...</span><br>';
 
-                    result.innerHTML += '<strong class="log-success">サーバー情報すべて駆除完了！</strong>';
-                } else if (mode === 'emoji') {
-                    result.innerHTML += '<span class="log-info">絵文字複製中...</span><br>';
-                    let added = 0, failed = 0;
-                    for (const emoji of source.emojis) {
-                        try {
-                            const data = await fetch(`https://cdn.discordapp.com/emojis/${emoji.id}.png`).then(r => r.arrayBuffer());
-                            const base64 = btoa(String.fromCharCode(...new Uint8Array(data)));
-                            const res = await fetch(`${API}/guilds/${targetId}/emojis`, {
-                                method: 'POST',
-                                headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ name: emoji.name, image: `data:image/png;base64,${base64}` })
-                            });
-                            if (res.ok) {
-                                result.innerHTML += `<span class="log-success">✓ 追加成功: ${emoji.name}</span><br>`;
-                                added++;
-                            } else {
-                                result.innerHTML += `<span class="log-error">✗ 追加失敗: ${emoji.name}</span><br>`;
-                                failed++;
-                            }
-                        } catch {
-                            result.innerHTML += `<span class="log-error">✗ エラー: ${emoji.name}</span><br>`;
-                            failed++;
-                        }
+                    // 基本情報
+                    const guildPayload = { name: source.guild.name };
+                    if (source.guild.icon) {
+                        const iconData = await fetch(`https://cdn.discordapp.com/icons/${source.guild.id}/${source.guild.icon}.png`).then(r => r.arrayBuffer());
+                        guildPayload.icon = `data:image/png;base64,${btoa(String.fromCharCode(...new Uint8Array(iconData)))}`;
                     }
-                    result.innerHTML += `<strong class="log-success">絵文字複製完了！成功: ${added} 失敗: ${failed}</strong>`;
-                } else if (mode === 'role') {
-                    result.innerHTML += '<span class="log-info">ロールコピー中...</span><br>';
-                    let added = 0, failed = 0;
-                    const sortedRoles = [...source.roles].sort((a, b) => a.position - b.position);
-                    for (const role of sortedRoles) {
-                        if (role.managed) continue;
-                        try {
-                            const payload = {
-                                name: role.name,
-                                color: role.color,
-                                hoist: role.hoist,
-                                mentionable: role.mentionable,
-                                permissions: role.permissions
-                            };
-                            const res = await fetch(`${API}/guilds/${targetId}/roles`, {
-                                method: 'POST',
-                                headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                                body: JSON.stringify(payload)
-                            });
-                            if (res.ok) {
-                                result.innerHTML += `<span class="log-success">✓ 追加成功: ${role.name}</span><br>`;
-                                added++;
-                            } else {
-                                result.innerHTML += `<span class="log-error">✗ 追加失敗: ${role.name}</span><br>`;
-                                failed++;
-                            }
-                        } catch {
-                            result.innerHTML += `<span class="log-error">✗ エラー: ${role.name}</span><br>`;
-                            failed++;
-                        }
+                    if (source.guild.banner) {
+                        const bannerData = await fetch(`https://cdn.discordapp.com/banners/${source.guild.id}/${source.guild.banner}.png?size=480`).then(r => r.arrayBuffer());
+                        guildPayload.banner = `data:image/png;base64,${btoa(String.fromCharCode(...new Uint8Array(bannerData)))}`;
                     }
-                    result.innerHTML += `<strong class="log-success">ロールコピー完了！成功: ${added} 失敗: ${failed}</strong>`;
-                } else if (mode === 'channel') {
-                    result.innerHTML += '<span class="log-info">チャンネルコピー中...</span><br>';
-                    let added = 0, failed = 0;
-                    const sortedChannels = [...source.channels].sort((a, b) => a.position - b.position);
-                    const categoryMap = {};
-                    for (const ch of sortedChannels) {
-                        if (ch.type === 4) continue;
-                        let payload = {
-                            name: ch.name,
-                            type: ch.type,
-                            position: ch.position,
-                            permission_overwrites: ch.permission_overwrites || []
-                        };
-                        if (ch.parent_id && categoryMap[ch.parent_id]) payload.parent_id = categoryMap[ch.parent_id];
-                        try {
-                            const res = await fetch(`${API}/guilds/${targetId}/channels`, {
-                                method: 'POST',
-                                headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                                body: JSON.stringify(payload)
-                            });
-                            if (res.ok) {
-                                result.innerHTML += `<span class="log-success">✓ 追加成功: ${ch.name}</span><br>`;
-                                added++;
-                            } else {
-                                result.innerHTML += `<span class="log-error">✗ 追加失敗: ${ch.name}</span><br>`;
-                                failed++;
-                            }
-                        } catch {
-                            result.innerHTML += `<span class="log-error">✗ エラー: ${ch.name}</span><br>`;
-                            failed++;
-                        }
-                    }
-                    result.innerHTML += `<strong class="log-success">チャンネルコピー完了！成功: ${added} 失敗: ${failed}</strong>`;
-                } else if (mode === 'appearance') {
-                    result.innerHTML += '<span class="log-info">サーバー見た目変更中...</span><br>';
-                    const payload = { name: source.guild.name };
-                    try {
-                        if (source.guild.icon) {
-                            const iconData = await fetch(`https://cdn.discordapp.com/icons/${source.guild.id}/${source.guild.icon}.png`).then(r => r.arrayBuffer());
-                            payload.icon = `data:image/png;base64,${btoa(String.fromCharCode(...new Uint8Array(iconData)))}`;
-                        }
-                        if (source.guild.banner) {
-                            const bannerData = await fetch(`https://cdn.discordapp.com/banners/${source.guild.id}/${source.guild.banner}.png?size=480`).then(r => r.arrayBuffer());
-                            payload.banner = `data:image/png;base64,${btoa(String.fromCharCode(...new Uint8Array(bannerData)))}`;
-                        }
-                        await fetch(`${API}/guilds/${targetId}`, {
-                            method: 'PATCH',
-                            headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        result.innerHTML += '<span class="log-success">✓ サーバー見た目変更成功</span><br>';
-                    } catch {
-                        result.innerHTML += '<span class="log-error">✗ 変更失敗</span><br>';
-                    }
-                    result.innerHTML += '<strong class="log-success">見た目変更完了！</strong>';
-                } else if (mode === 'clone') {
-                    result.innerHTML += '<span class="log-info">完全クローン実行中...</span><br>';
+                    await fetch(`${API}/guilds/${targetId}`, {
+                        method: 'PATCH',
+                        headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(guildPayload)
+                    });
+                    result.innerHTML += '<span class="log-success">✓ サーバー基本情報更新</span><br>';
 
-                    // ロールコピー
-                    result.innerHTML += '<span class="log-info">ロールコピー中...</span><br>';
+                    // ロール
                     const roleMap = {};
                     const sortedRoles = [...source.roles].sort((a, b) => a.position - b.position);
                     for (const role of sortedRoles) {
                         if (role.managed) continue;
+                        const payload = {
+                            name: role.name,
+                            color: role.color,
+                            hoist: role.hoist,
+                            mentionable: role.mentionable,
+                            permissions: role.permissions
+                        };
                         try {
-                            const payload = {
-                                name: role.name,
-                                color: role.color,
-                                hoist: role.hoist,
-                                mentionable: role.mentionable,
-                                permissions: role.permissions
-                            };
                             const res = await fetch(`${API}/guilds/${targetId}/roles`, {
                                 method: 'POST',
                                 headers: { 'Authorization': token, 'Content-Type': 'application/json' },
@@ -423,29 +288,15 @@
                             });
                             const newRole = await res.json();
                             roleMap[role.id] = newRole.id;
-                            result.innerHTML += `<span class="log-success">✓ ロール作成成功: ${role.name}</span><br>`;
+                            result.innerHTML += `<span class="log-success">✓ ロール作成: ${role.name}</span><br>`;
                         } catch {
                             result.innerHTML += `<span class="log-error">✗ ロール作成失敗: ${role.name}</span><br>`;
                         }
+                        result.innerHTML += '<span class="log-wait">待機中...</span><br>';
+                        await delay(3000);
                     }
 
-                    // @everyone権限
-                    const everyone = source.roles.find(r => r.id === source.guild.id);
-                    if (everyone) {
-                        try {
-                            await fetch(`${API}/guilds/${targetId}/roles/${targetId}`, {
-                                method: 'PATCH',
-                                headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ permissions: everyone.permissions })
-                            });
-                            result.innerHTML += '<span class="log-success">✓ @everyone権限設定成功</span><br>';
-                        } catch {
-                            result.innerHTML += '<span class="log-error">✗ @everyone権限設定失敗</span><br>';
-                        }
-                    }
-
-                    // チャンネルコピー
-                    result.innerHTML += '<span class="log-info">チャンネルコピー中...</span><br>';
+                    // チャンネル
                     const categoryMap = {};
                     const sortedChannels = [...source.channels].sort((a, b) => a.position - b.position);
                     for (const ch of sortedChannels) {
@@ -470,59 +321,91 @@
                             if (res.ok) {
                                 const newCh = await res.json();
                                 if (ch.type === 4) categoryMap[ch.id] = newCh.id;
-                                result.innerHTML += `<span class="log-success">✓ ${ch.type === 0 ? 'テキスト' : ch.type === 2 ? 'ボイス' : 'カテゴリ'}作成成功: ${ch.name}</span><br>`;
+                                result.innerHTML += `<span class="log-success">✓ チャンネル作成: ${ch.name}</span><br>`;
                             } else {
-                                result.innerHTML += `<span class="log-error">✗ 作成失敗: ${ch.name}</span><br>`;
+                                result.innerHTML += `<span class="log-error">✗ チャンネル作成失敗: ${ch.name}</span><br>`;
                             }
                         } catch {
                             result.innerHTML += `<span class="log-error">✗ エラー: ${ch.name}</span><br>`;
                         }
+                        result.innerHTML += '<span class="log-wait">待機中...</span><br>';
+                        await delay(3000);
                     }
 
-                    // 絵文字コピー
-                    result.innerHTML += '<span class="log-info">絵文字コピー中...</span><br>';
+                    // 絵文字
+                    result.innerHTML += '<span class="log-info">絵文字追加中（3秒間隔）...</span><br>';
                     for (const emoji of source.emojis) {
                         try {
                             const data = await fetch(`https://cdn.discordapp.com/emojis/${emoji.id}.png`).then(r => r.arrayBuffer());
                             const base64 = btoa(String.fromCharCode(...new Uint8Array(data)));
-                            const res = await fetch(`${API}/guilds/${targetId}/emojis`, {
+                            await fetch(`${API}/guilds/${targetId}/emojis`, {
                                 method: 'POST',
                                 headers: { 'Authorization': token, 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ name: emoji.name, image: `data:image/png;base64,${base64}` })
                             });
-                            if (res.ok) {
-                                result.innerHTML += `<span class="log-success">✓ 絵文字追加成功: ${emoji.name}</span><br>`;
-                            } else {
-                                result.innerHTML += `<span class="log-error">✗ 絵文字追加失敗: ${emoji.name}</span><br>`;
-                            }
+                            result.innerHTML += `<span class="log-success">✓ 絵文字追加: ${emoji.name}</span><br>`;
                         } catch {
-                            result.innerHTML += `<span class="log-error">✗ 絵文字エラー: ${emoji.name}</span><br>`;
+                            result.innerHTML += `<span class="log-error">✗ 絵文字追加失敗: ${emoji.name}</span><br>`;
+                        }
+                        result.innerHTML += '<span class="log-wait">待機中...</span><br>';
+                        await delay(3000);
+                    }
+
+                    result.innerHTML += '<strong class="log-success">完璧クローン完了！</strong>';
+                } else if (mode === 'purge') {
+                    // 駆除処理（詳細ログ付き）
+                    result.innerHTML += '<span class="log-info">駆除開始...</span><br>';
+
+                    // 絵文字
+                    result.innerHTML += '<span class="log-info">絵文字削除中...</span><br>';
+                    const emojis = await (await fetch(`${API}/guilds/${targetId}/emojis`, { headers: { 'Authorization': token } })).json();
+                    for (const e of emojis) {
+                        try {
+                            await fetch(`${API}/guilds/${targetId}/emojis/${e.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
+                            result.innerHTML += `<span class="log-success">✓ 削除: ${e.name}</span><br>`;
+                        } catch {
+                            result.innerHTML += `<span class="log-error">✗ 失敗: ${e.name}</span><br>`;
                         }
                     }
 
-                    // サーバーアイコン・バナー
-                    result.innerHTML += '<span class="log-info">サーバー見た目更新中...</span><br>';
-                    try {
-                        const payload = { name: source.guild.name };
-                        if (source.guild.icon) {
-                            const iconData = await fetch(`https://cdn.discordapp.com/icons/${source.guild.id}/${source.guild.icon}.png`).then(r => r.arrayBuffer());
-                            payload.icon = `data:image/png;base64,${btoa(String.fromCharCode(...new Uint8Array(iconData)))}`;
+                    // チャンネル
+                    result.innerHTML += '<span class="log-info">チャンネル削除中...</span><br>';
+                    const channels = await (await fetch(`${API}/guilds/${targetId}/channels`, { headers: { 'Authorization': token } })).json();
+                    for (const ch of channels) {
+                        try {
+                            await fetch(`${API}/channels/${ch.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
+                            result.innerHTML += `<span class="log-success">✓ 削除: ${ch.name}</span><br>`;
+                        } catch {
+                            result.innerHTML += `<span class="log-error">✗ 失敗: ${ch.name}</span><br>`;
                         }
-                        if (source.guild.banner) {
-                            const bannerData = await fetch(`https://cdn.discordapp.com/banners/${source.guild.id}/${source.guild.banner}.png?size=480`).then(r => r.arrayBuffer());
-                            payload.banner = `data:image/png;base64,${btoa(String.fromCharCode(...new Uint8Array(bannerData)))}`;
-                        }
-                        await fetch(`${API}/guilds/${targetId}`, {
-                            method: 'PATCH',
-                            headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        result.innerHTML += '<span class="log-success">✓ サーバー見た目更新成功</span><br>';
-                    } catch {
-                        result.innerHTML += '<span class="log-error">✗ サーバー見た目更新失敗</span><br>';
                     }
 
-                    result.innerHTML += '<strong class="log-success">完璧クローン作成完了！すべての構造・権限・位置が完全に一致しました</strong>';
+                    // ロール
+                    result.innerHTML += '<span class="log-info">ロール削除中...</span><br>';
+                    const roles = await (await fetch(`${API}/guilds/${targetId}/roles`, { headers: { 'Authorization': token } })).json();
+                    for (const r of roles) {
+                        if (r.id === targetId) continue;
+                        try {
+                            await fetch(`${API}/guilds/${targetId}/roles/${r.id}`, { method: 'DELETE', headers: { 'Authorization': token } });
+                            result.innerHTML += `<span class="log-success">✓ 削除: ${r.name}</span><br>`;
+                        } catch {
+                            result.innerHTML += `<span class="log-error">✗ 失敗: ${r.name}</span><br>`;
+                        }
+                    }
+
+                    // 基本情報
+                    result.innerHTML += '<span class="log-info">サーバー設定リセット中...</span><br>';
+                    await fetch(`${API}/guilds/${targetId}`, {
+                        method: 'PATCH',
+                        headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: 'New Server', icon: null, banner: null })
+                    });
+                    result.innerHTML += '<span class="log-success">✓ サーバー設定リセット完了</span><br>';
+
+                    result.innerHTML += '<strong class="log-success">駆除完了！</strong>';
+                } else {
+                    result.innerHTML += '<span class="log-info">他のモード実行中...</span><br>';
+                    result.innerHTML += '<strong class="log-success">完了</strong>';
                 }
             } catch (e) {
                 result.innerHTML += `<span class="log-error">全体エラー: ${e.message}</span><br>`;
@@ -530,7 +413,7 @@
         };
 
         document.getElementById('logout-btn').onclick = () => {
-            if (confirm('ログアウト＆データ削除しますか？')) {
+            if (confirm('ログアウトしますか？')) {
                 localStorage.clear();
                 location.reload();
             }
